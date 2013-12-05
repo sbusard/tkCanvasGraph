@@ -206,9 +206,9 @@ class CreatingMouse(Mouse):
     Add creation behaviours to a canvas.
     
     The added behaviours are:
-        * creating a vertice when clicking on empty space;
+        * creating a vertex when clicking on empty space;
         * creating an edge between two different vertices when dragging
-          from one vertice to another.
+          from one vertex to another.
     """
     
     def __init__(self, canvas, vertices, button="1", modifier=""):
@@ -225,10 +225,10 @@ class CreatingMouse(Mouse):
     def pressed(self, event):
         element = self.canvas.current_element()
         
-        # if element exists and is a vertice,
+        # if element exists and is a vertex,
         #   start to build an edge
         # otherwise,
-        #   build a vertice at position
+        #   build a vertex at position
         
         if (element is not None and element in self.vertices):
             self.starting = element
@@ -236,7 +236,7 @@ class CreatingMouse(Mouse):
         else:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            self.canvas.new_vertice(x, y)
+            self.canvas.new_vertex(x, y)
             return False
         
     
@@ -250,7 +250,7 @@ class CreatingMouse(Mouse):
         if self.starting is not None:
             element = self.canvas.current_element()
             
-            # if element exists, is a vertice and is not starting,
+            # if element exists, is a vertex and is not starting,
             #   add an edge 
             # otherwise,
             #   do nothing

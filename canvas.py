@@ -40,8 +40,8 @@ class CanvasGraph(tk.Canvas):
         self.config(scrollregion=self.bbox("all"))
 
 
-    def _vertice_coords_from_center(self, x, y):
-        """Return the coordinates for a vertice centered at (x, y)."""
+    def _vertex_coords_from_center(self, x, y):
+        """Return the coordinates for a vertex centered at (x, y)."""
         return (x-STATERADIUS, y-STATERADIUS, x+STATERADIUS, y+STATERADIUS)
     
     def _edge_coords_from_ends(self, orig, end):
@@ -71,9 +71,9 @@ class CanvasGraph(tk.Canvas):
         else:
             return None
     
-    def new_vertice(self, x, y):
-        """Add a vertice at (x,y)."""
-        v = self.create_oval(self._vertice_coords_from_center(x, y),
+    def new_vertex(self, x, y):
+        """Add a vertex at (x,y)."""
+        v = self.create_oval(self._vertex_coords_from_center(x, y),
                              fill="white")
         
         # Update scrollregion
