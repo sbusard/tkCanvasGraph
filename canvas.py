@@ -4,12 +4,11 @@ import math
 from observable import ObservableSet
 from mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
-
-# Radius of circles representing states
-STATERADIUS=10
+from graph import Vertex, Edge
 
 # Padding for scroll region
 PADDING=10
+
 
 class CanvasGraph(tk.Canvas):
     
@@ -21,8 +20,8 @@ class CanvasGraph(tk.Canvas):
         self.selected.register(self)
         
         # Vertices and edges
-        self.vertices = set()
-        self.edges = set()
+        self.vertices = {}
+        self.edges = {}
         
         # Populate mouses
         self.mouses = {}
@@ -38,30 +37,6 @@ class CanvasGraph(tk.Canvas):
                            button="1", modifier="Control")
         
         self.config(scrollregion=self.bbox("all"))
-
-
-    def _vertex_coords_from_center(self, x, y):
-        """Return the coordinates for a vertex centered at (x, y)."""
-        return (x-STATERADIUS, y-STATERADIUS, x+STATERADIUS, y+STATERADIUS)
-    
-    def _edge_coords_from_ends(self, orig, end):
-        xo, yo = self._center_from_coords(*self.coords(orig))
-        xe, ye = self._center_from_coords(*self.coords(end))
-        if xe - xo != 0:
-            alpha = math.atan((ye-yo)/(xe-xo))
-        else:
-            alpha = (-1 if yo < ye else 1) * math.pi / 2
-        dx = STATERADIUS * math.cos(alpha)
-        dy = STATERADIUS * math.sin(alpha)
-        return (xo + dx if xe >= xo else xo - dx,
-                yo + dy if xe > xo else yo - dy,
-                xe - dx if xe >= xo else xe + dx,
-                ye - dy if xe > xo else ye + dy)
-    
-    def _center_from_coords(self, x0, y0, x1, y1):
-        """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
-        return ((x0 + x1) / 2, (y0 + y1) / 2)
-    
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
@@ -73,31 +48,29 @@ class CanvasGraph(tk.Canvas):
     
     def new_vertex(self, x, y):
         """Add a vertex at (x,y)."""
-        v = self.create_oval(self._vertex_coords_from_center(x, y),
-                             fill="white")
+        v = Vertex(self, x, y)
         
         # Update scrollregion
         self.update_scrollregion()
             
-        self.vertices.add(v)
+        self.vertices[v.handle] = v
     
     def new_edge(self, orig, end):
         """Add an edge from orig to end, if none exists."""
         if len(list((o, e, n) for (o, e, n) in self.edges
                     if o == orig and n == end)) <= 0:
             # No pre-existing edge, build it
-            coords = self._edge_coords_from_ends(orig, end)
-            e = self.create_line(*coords, arrow="last")
-            self.edges.add((orig, e, end))
+            e = Edge(self, self.vertices[orig], self.vertices[end])
+            self.edges[(orig, e.handle, end)] = e
     
     def move_vertices(self, vertices, dx, dy):
         """Move the vertices and the connected edges of (dx,dy)."""
         for v in vertices:
             if v in self.vertices:
-                self.move(v, dx, dy)
+                self.vertices[v].move(dx, dy)
                 for o, e, n in self.edges:
                     if o == v or n == v:
-                        self.coords(e,self._edge_coords_from_ends(o, n))
+                        self.edges[(o, e, n)].move(dx, dy)
         
         # Update scrollregion
         self.update_scrollregion()
