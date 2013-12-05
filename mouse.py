@@ -258,6 +258,7 @@ class CreatingMouse(Mouse):
             if (element is not None and element in self.vertices and
                 element != self.starting):
                 self.canvas.new_edge(self.starting, element)
+                self.starting = None
                 return False
             else:
                 return True    

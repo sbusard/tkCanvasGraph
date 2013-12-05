@@ -8,6 +8,9 @@ from mouse import (SelectingMouse, SelectionModifyingMouse,
 # Radius of circles representing states
 STATERADIUS=10
 
+# Padding for scroll region
+PADDING=10
+
 class CanvasGraph(tk.Canvas):
     
     def __init__(self, parent, **config):
@@ -33,6 +36,8 @@ class CanvasGraph(tk.Canvas):
                          button="1", modifier="")
         cm = CreatingMouse(self, self.vertices,
                            button="1", modifier="Control")
+        
+        self.config(scrollregion=self.bbox("all"))
 
 
     def _vertice_coords_from_center(self, x, y):
@@ -70,6 +75,10 @@ class CanvasGraph(tk.Canvas):
         """Add a vertice at (x,y)."""
         v = self.create_oval(self._vertice_coords_from_center(x, y),
                              fill="white")
+        
+        # Update scrollregion
+        self.update_scrollregion()
+            
         self.vertices.add(v)
     
     def new_edge(self, orig, end):
@@ -89,6 +98,9 @@ class CanvasGraph(tk.Canvas):
                 for o, e, n in self.edges:
                     if o == v or n == v:
                         self.coords(e,self._edge_coords_from_ends(o, n))
+        
+        # Update scrollregion
+        self.update_scrollregion()
     
     
     def update(self, observed):
@@ -98,6 +110,12 @@ class CanvasGraph(tk.Canvas):
                     self.itemconfig(v, fill="yellow")
                 else:
                     self.itemconfig(v, fill="white")
+    
+    
+    def update_scrollregion(self):
+        minx, miny, maxx, maxy = self.bbox("all")
+        self.config(scrollregion=(minx-PADDING, miny-PADDING,
+                                  maxx+PADDING, maxy+PADDING))
     
     
     def register_mouse(self, mouse, button, modifier):
@@ -139,7 +157,26 @@ class CanvasGraph(tk.Canvas):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    drawer = CanvasGraph(root)
-    drawer.pack(fill="both",expand=True)
+    
+    frame = tk.Frame(root)
+
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_columnconfigure(0, weight=1)
+
+    xscrollbar = tk.Scrollbar(frame, orient=tk.HORIZONTAL)
+    xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+    yscrollbar = tk.Scrollbar(frame)
+    yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+    canvas = CanvasGraph(frame, xscrollcommand=xscrollbar.set,
+                                yscrollcommand=yscrollbar.set)
+
+    canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+    xscrollbar.config(command=canvas.xview)
+    yscrollbar.config(command=canvas.yview)
+    
+    frame.pack(fill="both", expand=True)
     
     root.mainloop()
