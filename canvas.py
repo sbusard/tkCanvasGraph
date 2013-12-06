@@ -25,18 +25,7 @@ class CanvasGraph(tk.Canvas):
         self.vertices = set()
         self.edges = set()
         
-        # Populate mouses
         self.mouses = {}
-        sm = SelectingMouse(self, selection=self.selected,
-                            elements=self.vertices,
-                            button="1", modifier="")
-        smm = SelectionModifyingMouse(self, selection=self.selected,
-                                      elements=self.vertices,
-                                      button="1", modifier="Shift")
-        mm = MovingMouse(self, self.selected,
-                         button="1", modifier="")
-        cm = CreatingMouse(self, self.vertices,
-                           button="1", modifier="Control")
         
         self.config(scrollregion=self.bbox("all"))
     
@@ -163,5 +152,17 @@ if __name__ == "__main__":
     yscrollbar.config(command=canvas.yview)
     
     frame.pack(fill="both", expand=True)
+    
+    # Mouses for the canvas
+    sm = SelectingMouse(canvas, selection=canvas.selected,
+                        elements=canvas.vertices,
+                        button="1", modifier="")
+    smm = SelectionModifyingMouse(canvas, selection=canvas.selected,
+                                  elements=canvas.vertices,
+                                  button="1", modifier="Shift")
+    mm = MovingMouse(canvas, canvas.selected,
+                     button="1", modifier="")
+    cm = CreatingMouse(canvas, canvas.vertices,
+                       button="1", modifier="Control")
     
     root.mainloop()

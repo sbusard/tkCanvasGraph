@@ -100,6 +100,7 @@ class SelectingMouse(Mouse):
     
     def released(self, event):
         if self.mousemoved:
+            self.mousemoved = False
             if self.selecting is None:
                 return True
             else:
@@ -118,8 +119,12 @@ class SelectingMouse(Mouse):
             if self.elements is None or element in self.elements:
                 self.selected.clear()
                 self.selected.add(element)
+            self.mousemoved = False
+            if self.selecting is not None:
+                self.selecting = None
+                self.canvas.delete(self.selection)
+                self.selection = None
             return False
-        self.mousemoved = False
 
 
 class SelectionModifyingMouse(Mouse):
