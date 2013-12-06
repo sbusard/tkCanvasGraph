@@ -247,7 +247,7 @@ class CreatingMouse(Mouse):
             return True
     
     def released(self, event):
-        if self.starting is not None:
+        if self.starting is not None:            
             element = self.canvas.current_element()
             
             # if element exists, is a vertex and is not starting,
@@ -261,4 +261,6 @@ class CreatingMouse(Mouse):
                 self.starting = None
                 return False
             else:
-                return True    
+                self.starting = None
+                return True
+        return True
