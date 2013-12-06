@@ -27,7 +27,7 @@ class Vertex:
             self.labelhandle = self.canvas.create_text(x, y, text=label,
                                                        justify=tk.CENTER)
             x0l, y0l, x1l, y1l = self.canvas.bbox(self.labelhandle)
-        
+            
             # Draw on canvas and store handle
             x0e = x - (x1l-x0l)/2 * math.sqrt(2)
             y0e = y - (y1l-y0l)/2 * math.sqrt(2)
@@ -35,15 +35,15 @@ class Vertex:
             y1e = y + (y1l-y0l)/2 * math.sqrt(2)
             self.handle = self.canvas.create_oval((x0e, y0e, x1e, y1e),
                                                   fill="white")
+            self.canvas.tag_raise(self.labelhandle)
         
         else:
+            self.labelhandle = None
             self.handle = self.canvas.create_oval((x - VERTEXRADIUS,
                                                    y - VERTEXRADIUS,
                                                    x + VERTEXRADIUS,
                                                    y + VERTEXRADIUS),
                                                   fill="white")
-        
-        self.canvas.tag_raise(self.labelhandle)
     
     def move(self, dx, dy):
         """
@@ -97,6 +97,8 @@ class Edge:
                                     *canvas.bbox(self.labelhandle),
                                     fill="white", outline="white")
             canvas.tag_raise(self.labelhandle)
+        else:
+            self.labelhandle = self.labelbghandle = None
     
     def _edge_coords_from_ends(self, orig, end):
         xo0, yo0, xo1, yo1 = self.canvas.coords(orig)
