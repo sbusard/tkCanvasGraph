@@ -103,6 +103,7 @@ class SelectingMouse(Mouse):
             self.selected.clear()
             for e in self.canvas.find_enclosed(
                                            *self.canvas.coords(self.selection)):
+                e = self.canvas.element_by_handle(e)
                 if self.elements is None or e in self.elements:
                     self.selected.add(e)
             self.selecting = None
@@ -221,6 +222,8 @@ class CreatingMouse(Mouse):
         super().__init__(canvas, button, modifier)
         self.vertices = vertices
         self.starting = None
+        
+        self.ids = 0
     
     def pressed(self, event):
         element = self.canvas.current_element()
@@ -236,7 +239,8 @@ class CreatingMouse(Mouse):
         else:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            self.canvas.new_vertex(x, y)
+            self.canvas.new_vertex(x, y, label="state " + str(self.ids))
+            self.ids+=1
             return False
         
     
@@ -247,7 +251,7 @@ class CreatingMouse(Mouse):
             return True
     
     def released(self, event):
-        if self.starting is not None:            
+        if self.starting is not None:
             element = self.canvas.current_element()
             
             # if element exists, is a vertex and is not starting,
@@ -257,7 +261,9 @@ class CreatingMouse(Mouse):
             
             if (element is not None and element in self.vertices and
                 element != self.starting):
-                self.canvas.new_edge(self.starting, element)
+                self.canvas.new_edge(self.starting, element,
+                                     label="edge " + str(self.ids))
+                self.ids+=1
                 self.starting = None
                 return False
             else:

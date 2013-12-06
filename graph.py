@@ -1,4 +1,5 @@
 import math
+import tkinter as tk
 
 # Radius of circles representing vertices
 VERTEXRADIUS=10
@@ -21,13 +22,28 @@ class Vertex:
         self.canvas = canvas
         self.label = label
         
-        # Draw on canvas and store handle
-        self.handle = self.canvas.create_oval((x-VERTEXRADIUS, y-VERTEXRADIUS,
-                                               x+VERTEXRADIUS, y+VERTEXRADIUS),
-                                               fill="white")
+        # Add label on canvas and store handle
+        if label != "":
+            self.labelhandle = self.canvas.create_text(x, y, text=label,
+                                                       justify=tk.CENTER)
+            x0l, y0l, x1l, y1l = self.canvas.bbox(self.labelhandle)
         
-        # TODO Add label on canvas and store handle
-        self.labelhandle = None
+            # Draw on canvas and store handle
+            x0e = x - (x1l-x0l)/2 * math.sqrt(2)
+            y0e = y - (y1l-y0l)/2 * math.sqrt(2)
+            x1e = x + (x1l-x0l)/2 * math.sqrt(2)
+            y1e = y + (y1l-y0l)/2 * math.sqrt(2)
+            self.handle = self.canvas.create_oval((x0e, y0e, x1e, y1e),
+                                                  fill="white")
+        
+        else:
+            self.handle = self.canvas.create_oval((x - VERTEXRADIUS,
+                                                   y - VERTEXRADIUS,
+                                                   x + VERTEXRADIUS,
+                                                   y + VERTEXRADIUS),
+                                                  fill="white")
+        
+        self.canvas.tag_raise(self.labelhandle)
     
     def move(self, dx, dy):
         """
@@ -39,6 +55,13 @@ class Vertex:
         self.canvas.move(self.handle, dx, dy)
         if self.labelhandle is not None:
             self.canvas.move(self.labelhandle, dx, dy)
+    
+    
+    def select(self):
+        self.canvas.itemconfig(self.handle, fill="yellow")
+    
+    def deselect(self):
+        self.canvas.itemconfig(self.handle, fill="white")
 
 
 class Edge:
@@ -65,21 +88,44 @@ class Edge:
         coords = self._edge_coords_from_ends(origin.handle, end.handle)
         self.handle = canvas.create_line(*coords, arrow="last")
         
-        # TODO Add label on canvas and store handle
+        # Add label on canvas and store handle
+        if label != "":
+            x, y = self._center_from_coords(*canvas.coords(self.handle))
+            self.labelhandle = self.canvas.create_text(x, y, text=label,
+                                                       justify=tk.CENTER)
+            self.labelbghandle = self.canvas.create_rectangle(
+                                    *canvas.bbox(self.labelhandle),
+                                    fill="white", outline="white")
+            canvas.tag_raise(self.labelhandle)
     
     def _edge_coords_from_ends(self, orig, end):
-        xo, yo = self._center_from_coords(*self.canvas.coords(orig))
-        xe, ye = self._center_from_coords(*self.canvas.coords(end))
-        if xe - xo != 0:
-            alpha = math.atan((ye-yo)/(xe-xo))
+        xo0, yo0, xo1, yo1 = self.canvas.coords(orig)
+        xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
+        xe0, ye0, xe1, ye1 = self.canvas.coords(end)
+        xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
+        
+        ao = xo1 - xoc
+        bo = yo1 - yoc
+        ae = xe1 - xec
+        be = ye1 - yec
+        
+        if xec != xoc:
+            m = (yec - yoc) / (xec - xoc)
+            
+            dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
+            dex = (ae * be) / math.sqrt(ae * ae * m * m + be * be)
+            doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
+            dey = (ae * be * m) / math.sqrt(ae * ae * m * m + be * be)
+        
         else:
-            alpha = (-1 if yo < ye else 1) * math.pi / 2
-        dx = VERTEXRADIUS * math.cos(alpha)
-        dy = VERTEXRADIUS * math.sin(alpha)
-        return (xo + dx if xe >= xo else xo - dx,
-                yo + dy if xe > xo else yo - dy,
-                xe - dx if xe >= xo else xe + dx,
-                ye - dy if xe > xo else ye + dy)
+            dox = dex = 0
+            doy = bo * (-1 if yec > yoc else 1)
+            dey = be * (-1 if yec > yoc else 1)
+        
+        return (xoc + dox if xec >= xoc else xoc - dox,
+                yoc + doy if xec > xoc else yoc - doy,
+                xec - dex if xec >= xoc else xec + dex,
+                yec - dey if xec > xoc else yec + dey)
     
     def _center_from_coords(self, x0, y0, x1, y1):
         """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
@@ -95,3 +141,8 @@ class Edge:
         self.canvas.coords(self.handle,
                            self._edge_coords_from_ends(self.origin.handle,
                                                        self.end.handle))
+        if self.labelhandle is not None:
+            x, y = self._center_from_coords(*self.canvas.coords(self.handle))
+            self.canvas.coords(self.labelhandle, x, y)
+            self.canvas.coords(self.labelbghandle,
+                               *self.canvas.bbox(self.labelhandle))
