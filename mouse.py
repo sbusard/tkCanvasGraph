@@ -61,6 +61,7 @@ class SelectingMouse(Mouse):
     
     def pressed(self, event):
         element = self.canvas.current_element()
+        self.mousemoved = False
         
         # if element exists,
         #   if element is in elements and not selected,
@@ -87,6 +88,7 @@ class SelectingMouse(Mouse):
         
     
     def moved(self, event):
+        self.mousemoved = True
         if self.selecting is None:
             return True
         else:
@@ -97,19 +99,27 @@ class SelectingMouse(Mouse):
             return False
     
     def released(self, event):
-        if self.selecting is None:
-            return True
-        else:
-            self.selected.clear()
-            for e in self.canvas.find_enclosed(
+        if self.mousemoved:
+            if self.selecting is None:
+                return True
+            else:
+                self.selected.clear()
+                for e in self.canvas.find_enclosed(
                                            *self.canvas.coords(self.selection)):
-                e = self.canvas.element_by_handle(e)
-                if self.elements is None or e in self.elements:
-                    self.selected.add(e)
-            self.selecting = None
-            self.canvas.delete(self.selection)
-            self.selection = None
+                    e = self.canvas.element_by_handle(e)
+                    if self.elements is None or e in self.elements:
+                        self.selected.add(e)
+                self.selecting = None
+                self.canvas.delete(self.selection)
+                self.selection = None
+                return False
+        else:
+            element = self.canvas.current_element()
+            if self.elements is None or element in self.elements:
+                self.selected.clear()
+                self.selected.add(element)
             return False
+        self.mousemoved = False
 
 
 class SelectionModifyingMouse(Mouse):
