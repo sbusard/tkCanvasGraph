@@ -7,13 +7,16 @@ electricalRepulsion = 100
 iterationNumber = 10000
 forceThreshold = 0.1
 
-def _hooke_attraction(positions, vertex, end):
+def _hooke_attraction(origin, end):
     """
-    Return the force produced by the spring between vertex and end, applied
-    on vertex.
+    Return the force produced by the spring between origin and end, applied
+    on origin.
+    
+    origin -- an x,y couple;
+    end -- an x,y couple.
     """
-    xv, yv = positions[vertex]
-    xe, ye = positions[end]
+    xv, yv = origin
+    xe, ye = end
     dx = xv - xe
     dy = yv - ye
     distance = math.sqrt(dx*dx + dy*dy)
@@ -23,12 +26,15 @@ def _hooke_attraction(positions, vertex, end):
     
     return fx, fy
 
-def _coulomb_repulsion(positions, vertex, other):
+def _coulomb_repulsion(vertex, other):
     """
     Return the electrical force produced by the other vertex on vertex.
+    
+    vertex -- an x,y couple;
+    other -- an x,y couple.
     """
-    xv, yv = positions[vertex]
-    xo, yo = positions[other]
+    xv, yv = vertex
+    xo, yo = other
     dx = xv - xo
     dy = yv - yo
     distance = math.sqrt(dx*dx + dy*dy)
@@ -41,6 +47,9 @@ def _coulomb_repulsion(positions, vertex, other):
 def _force_based_layout_step(positions, edges):
     """
     Return the new positions of vertices in positions, given edges between them.
+    
+    positions -- a dictionary of vertex -> x,y coordinates values;
+    edges -- a set of edges between vertices of positions.
     """
     forces = {}
     # Compute forces
@@ -48,13 +57,21 @@ def _force_based_layout_step(positions, edges):
         fx, fy = 0, 0
         for v in positions:
             if vertex != v:
-                cfx, cfy = _coulomb_repulsion(positions, vertex, v)
+                cfx, cfy = _coulomb_repulsion(vertex.center, v.center)
                 fx += cfx
                 fy += cfy
-        for (o, e) in edges:
-            if o == vertex or e == vertex:
-                other = o if e == vertex else e
-                hfx, hfy = _hooke_attraction(positions, vertex, other)
+        for edge in edges:
+            if edge.origin == vertex or edge.end == vertex:                
+                # Compute coordinates of edge
+                opos, epos = edge.ends_coordinates
+                if edge.origin == vertex:
+                    vertexpos = opos
+                    otherpos = epos
+                else:
+                    vertexpos = epos
+                    otherpos = opos
+                
+                hfx, hfy = _hooke_attraction(vertexpos, otherpos)
                 fx += hfx
                 fy += hfy
         forces[vertex] = fx, fy

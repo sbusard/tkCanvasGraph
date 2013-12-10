@@ -63,7 +63,7 @@ class Vertex:
     
     def move_to(self, x, y):
         """Move this vertex to x,y and return the corresponding dx,dy."""
-        curx, cury = self.center()
+        curx, cury = self.center
         dx = x - curx
         dy = y - cury
         self.move(dx, dy)
@@ -75,6 +75,7 @@ class Vertex:
     def deselect(self):
         self.canvas.itemconfig(self.handle, fill="white")
     
+    @property
     def center(self):
         return self._center_from_coords(*self.canvas.coords(self.handle))
     
@@ -162,6 +163,27 @@ class Edge:
         dx = x1 - x0
         dy = y1 - y0
         return math.sqrt(dx*dx + dy*dy)
+    
+    @property
+    def ends_coordinates(self):
+        """
+        Return (xo, yo), (xe, ye), the coordinates of the ends of this edge,
+        connected to origin and end, respectively.
+        """
+        x0, y0, x1, y1 = self.canvas.coords(self.handle)
+        ox, oy = self.origin.center
+        ex, ey = self.end.center
+        
+        odist = math.sqrt((ox-x0)*(ox-x0) + (oy-y0)*(oy-y0))
+        edist = math.sqrt((ex-x0)*(ex-x0) + (ey-y0)*(ey-y0))
+        if odist < edist: # The x0, y0 is closer to origin
+            opos = x0, y0
+            epos = x1, y1
+        else:
+            opos = x1, y1
+            epos = x0, y0
+        
+        return opos, epos
     
     def move(self):
         """

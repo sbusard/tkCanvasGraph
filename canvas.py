@@ -34,9 +34,8 @@ class CanvasGraph(tk.Canvas):
         self.bind("r", self.start_layout)
     
     def start_layout(self, event):
-        vertices = {vertice:vertice.center() for vertice in self.vertices}
-        edges = {(e.origin, e.end) for e in self.edges}
-        nps = force_based_layout(vertices, edges)
+        vertices = {vertice:vertice.center for vertice in self.vertices}
+        nps = force_based_layout(vertices, self.edges)
         
         def layout():
             if self.new_event:
