@@ -19,6 +19,11 @@ class Vertex:
         """
         Create a vertex and draw it on canvas.
         """
+        
+        if label == "":
+            import random as rnd
+            label = "state\n"*3 + str(rnd.randint(0, 100))
+        
         self.canvas = canvas
         self.label = label
         
@@ -56,12 +61,26 @@ class Vertex:
         if self.labelhandle is not None:
             self.canvas.move(self.labelhandle, dx, dy)
     
+    def move_to(self, x, y):
+        """Move this vertex to x,y and return the corresponding dx,dy."""
+        curx, cury = self.center()
+        dx = x - curx
+        dy = y - cury
+        self.move(dx, dy)
+        return (dx, dy)
     
     def select(self):
         self.canvas.itemconfig(self.handle, fill="yellow")
     
     def deselect(self):
         self.canvas.itemconfig(self.handle, fill="white")
+    
+    def center(self):
+        return self._center_from_coords(*self.canvas.coords(self.handle))
+    
+    def _center_from_coords(self, x0, y0, x1, y1):
+        """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
+        return ((x0 + x1) / 2, (y0 + y1) / 2)
 
 
 class Edge:
@@ -87,6 +106,9 @@ class Edge:
         # Draw on canvas and store handle
         coords = self._edge_coords_from_ends(origin.handle, end.handle)
         self.handle = canvas.create_line(*coords, arrow="last")
+        
+        if label == "":
+            label = "edge" + str(int(self.length))
         
         # Add label on canvas and store handle
         if label != "":
@@ -133,12 +155,17 @@ class Edge:
         """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
         return ((x0 + x1) / 2, (y0 + y1) / 2)
     
-    def move(self, dx, dy):
+    @property
+    def length(self):
+        x0, y0, x1, y1 = self._edge_coords_from_ends(self.origin.handle,
+                                                     self.end.handle)
+        dx = x1 - x0
+        dy = y1 - y0
+        return math.sqrt(dx*dx + dy*dy)
+    
+    def move(self):
         """
-        Move this edge on canvas.
-        
-        dx -- the difference to move on x axis;
-        dy -- the difference to move on y axis.
+        Move this edge on canvas to fit its ends.
         """
         self.canvas.coords(self.handle,
                            self._edge_coords_from_ends(self.origin.handle,
@@ -148,3 +175,4 @@ class Edge:
             self.canvas.coords(self.labelhandle, x, y)
             self.canvas.coords(self.labelbghandle,
                                *self.canvas.bbox(self.labelhandle))
+            self.canvas.itemconfig(self.labelhandle, text=str(int(self.length)))

@@ -5,6 +5,7 @@ from observable import ObservableSet
 from mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
 from graph import Vertex, Edge
+from layout import force_based_layout
 
 # Padding for scroll region
 PADDING=10
@@ -28,6 +29,35 @@ class CanvasGraph(tk.Canvas):
         self.mouses = {}
         
         self.config(scrollregion=self.bbox("all"))
+        
+        self.focus_set()
+        self.bind("r", self.start_layout)
+    
+    def start_layout(self, event):
+        vertices = {vertice:vertice.center() for vertice in self.vertices}
+        edges = {(e.origin, e.end) for e in self.edges}
+        nps = force_based_layout(vertices, edges)
+        
+        def layout():
+            if self.new_event:
+                return
+            try:
+                np = nps.__next__()
+                
+                for vertex in np:
+                    vertex.move_to(*np[vertex])
+                for e in self.edges:
+                    e.move()
+
+                self.update_scrollregion()
+                
+                self.after(10, layout)
+                
+            except StopIteration:
+                pass
+        
+        self.new_event = False
+        self.after(10, layout)
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
@@ -71,7 +101,7 @@ class CanvasGraph(tk.Canvas):
             v.move(dx, dy)
             for e in self.edges:
                 if e.origin == v or e.end == v:
-                    e.move(dx, dy)
+                    e.move()
         
         # Update scrollregion
         self.update_scrollregion()
@@ -111,18 +141,21 @@ class CanvasGraph(tk.Canvas):
     
     def _pressed(self, button, modifier, event):
         if (button, modifier) in self.mouses:
+            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.pressed(event):
                     break
     
     def _moved(self, button, modifier, event):
         if (button, modifier) in self.mouses:
+            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.moved(event):
                     break
     
     def _released(self, button, modifier, event):
         if (button, modifier) in self.mouses:
+            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.released(event):
                     break
