@@ -113,13 +113,23 @@ class CanvasGraph(tk.Canvas):
                     v.select()
                 else:
                     v.deselect()
+        
+        if observed in self.elements.values():
+            keys = {k for k in self.elements if self.elements[k] == observed}
+            for key in keys:
+                del self.elements[key]
+            self.elements[observed.handle] = observed
+            if observed.labelhandle != None:
+                self.elements[observed.labelhandle] = observed
+            for e in self.edges:
+                if e.origin == observed or e.end == observed:
+                    e.move()
     
     
     def update_scrollregion(self):
         minx, miny, maxx, maxy = self.bbox("all")
         self.config(scrollregion=(minx-PADDING, miny-PADDING,
                                   maxx+PADDING, maxy+PADDING))
-    
     
     def register_mouse(self, mouse, button, modifier):
         """Register a new mouse for button pressed with modifier."""

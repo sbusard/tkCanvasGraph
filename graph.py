@@ -21,10 +21,10 @@ class Vertex:
         """
         
         self.canvas = canvas
-        self.label = label
+        self._label = label
         
         # Add label on canvas and store handle
-        if label != "":
+        if self.label != "":
             self.labelhandle = self.canvas.create_text(x, y, text=label,
                                                        justify=tk.CENTER)
             x0l, y0l, x1l, y1l = self.canvas.bbox(self.labelhandle)
@@ -122,6 +122,44 @@ class Vertex:
     def _center_from_coords(self, x0, y0, x1, y1):
         """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
         return ((x0 + x1) / 2, (y0 + y1) / 2)
+    
+    @property
+    def label(self):
+        return self._label
+    
+    @label.setter
+    def label(self, value):
+        self._label = value
+        
+        x, y = self._center_from_coords(*self.canvas.coords(self.handle))
+        
+        if self._label != "":
+            if self.labelhandle == None:
+                self.labelhandle = self.canvas.create_text(x, y,
+                                                           text=self._label,
+                                                           justify=tk.CENTER)
+            else:
+                self.canvas.itemconfig(self.labelhandle, text=self._label)
+            
+            x0l, y0l, x1l, y1l = self.canvas.bbox(self.labelhandle)
+            
+            # Draw on canvas and store handle
+            x0e = x - (x1l-x0l)/2 * math.sqrt(2)
+            y0e = y - (y1l-y0l)/2 * math.sqrt(2)
+            x1e = x + (x1l-x0l)/2 * math.sqrt(2)
+            y1e = y + (y1l-y0l)/2 * math.sqrt(2)
+            self.canvas.coords(self.handle, (x0e, y0e, x1e, y1e))
+        
+        else:
+            if self.labelhandle != None:
+                self.canvas.delete(self.labelhandle)
+            self.canvas.coords(self.handle, (x - VERTEXRADIUS,
+                                             y - VERTEXRADIUS,
+                                             x + VERTEXRADIUS,
+                                             y + VERTEXRADIUS))
+        
+        self.canvas.update(self)
+
 
 
 class Edge:
@@ -147,9 +185,6 @@ class Edge:
         # Draw on canvas and store handle
         coords = self._edge_coords_from_ends(origin.handle, end.handle)
         self.handle = canvas.create_line(*coords, arrow="last")
-        
-        if label == "":
-            label = str(int(self.length))
         
         # Add label on canvas and store handle
         if label != "":

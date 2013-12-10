@@ -75,7 +75,7 @@ class SelectingMouse(Mouse):
             if ((self.elements is None or element in self.elements) and
                 element not in self.selected):
                 self.selected.clear()
-                self.selected.add(element)
+                self.selected.add(element)                
             return True
         else:
             self.selected.clear()
