@@ -180,7 +180,7 @@ class Edge:
         self.canvas = canvas
         self.origin = origin
         self.end = end
-        self.label = label
+        self._label = label
         
         # Draw on canvas and store handle
         coords = self._edge_coords_from_ends(origin.handle, end.handle)
@@ -260,6 +260,35 @@ class Edge:
         
         return opos, epos
     
+    @property
+    def label(self):
+        return self._label
+        
+    @label.setter
+    def label(self, value):
+        self._label = value
+        
+        if self.labelhandle is None:
+            if self._label != "":
+                x,y = self._center_from_coords(*self.canvas.coords(self.handle))
+                self.labelhandle = self.canvas.create_text(x, y,
+                                                           text=self._label,
+                                                           justify=tk.CENTER)
+                self.labelbghandle = self.canvas.create_rectangle(
+                                            *self.canvas.bbox(self.labelhandle),
+                                            fill="white", outline="white")
+                self.canvas.tag_raise(self.labelhandle)
+        else:
+            if self._label == "":
+                self.canvas.delete(self.labelhandle)
+                self.canvas.delete(self.labelbghandle)
+                self.labelhandle = self.labelbghandle = None
+            else:
+                self.canvas.itemconfig(self.labelhandle,
+                                       text=self._label)
+                self.canvas.coords(self.labelbghandle,
+                                   *self.canvas.bbox(self.labelhandle))
+    
     def move(self):
         """
         Move this edge on canvas to fit its ends.
@@ -272,4 +301,3 @@ class Edge:
             self.canvas.coords(self.labelhandle, x, y)
             self.canvas.coords(self.labelbghandle,
                                *self.canvas.bbox(self.labelhandle))
-            self.canvas.itemconfig(self.labelhandle, text=str(int(self.length)))
