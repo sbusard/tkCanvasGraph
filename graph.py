@@ -20,10 +20,6 @@ class Vertex:
         Create a vertex and draw it on canvas.
         """
         
-        if label == "":
-            import random as rnd
-            label = "state\n"*3 + str(rnd.randint(0, 100))
-        
         self.canvas = canvas
         self.label = label
         
@@ -79,6 +75,50 @@ class Vertex:
     def center(self):
         return self._center_from_coords(*self.canvas.coords(self.handle))
     
+    def distance_vector_from(self, end):
+        """
+        Return the distance vector (x,y) from the end vertex.
+        """
+        xo0, yo0, xo1, yo1 = self.canvas.bbox(self.handle)
+        xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
+        xe0, ye0, xe1, ye1 = self.canvas.bbox(end.handle)
+        xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
+
+        ao = xo1 - xoc
+        bo = yo1 - yoc
+        ae = xe1 - xec
+        be = ye1 - yec
+
+        if xec != xoc:
+            m = (yec - yoc) / (xec - xoc)
+
+            dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
+            dex = (ae * be) / math.sqrt(ae * ae * m * m + be * be)
+            doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
+            dey = (ae * be * m) / math.sqrt(ae * ae * m * m + be * be)
+
+        else:
+            dox = dex = 0
+            doy = bo * (-1 if yec > yoc else 1)
+            dey = be * (-1 if yec > yoc else 1)
+
+        dbbox = (xoc + dox if xec >= xoc else xoc - dox,
+                 yoc + doy if xec > xoc else yoc - doy,
+                 xec - dex if xec >= xoc else xec + dex,
+                 yec - dey if xec > xoc else yec + dey)
+        
+        if xoc < xec:
+            dx = dbbox[2] - dbbox[0]
+        else:
+            dx = dbbox[0] - dbbox[2]
+        if yoc < yec:
+            dy = dbbox[3] - dbbox[1]
+        else:
+            dy = dbbox[1] - dbbox[3]
+        dx = dbbox[2] - dbbox[0]
+        dy = dbbox[3] - dbbox[1]
+        return dx, dy
+    
     def _center_from_coords(self, x0, y0, x1, y1):
         """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
         return ((x0 + x1) / 2, (y0 + y1) / 2)
@@ -109,7 +149,7 @@ class Edge:
         self.handle = canvas.create_line(*coords, arrow="last")
         
         if label == "":
-            label = "edge" + str(int(self.length))
+            label = str(int(self.length))
         
         # Add label on canvas and store handle
         if label != "":

@@ -1,6 +1,6 @@
 import math
 
-springLength = 80
+springLength = 60
 springStiffness = 0.1
 electricalRepulsion = 100
 
@@ -30,17 +30,14 @@ def _coulomb_repulsion(vertex, other):
     """
     Return the electrical force produced by the other vertex on vertex.
     
-    vertex -- an x,y couple;
-    other -- an x,y couple.
+    vertexbbox -- a vertex;
+    otherbbox -- another vertex.
     """
-    xv, yv = vertex
-    xo, yo = other
-    dx = xv - xo
-    dy = yv - yo
+    dx, dy = vertex.distance_vector_from(other)
     distance = math.sqrt(dx*dx + dy*dy)
     
-    fx = electricalRepulsion * dx / (distance*distance)
-    fy = electricalRepulsion * dy / (distance*distance)
+    fx = -electricalRepulsion * dx / (distance*distance)
+    fy = -electricalRepulsion * dy / (distance*distance)
     
     return fx, fy
 
@@ -55,11 +52,15 @@ def _force_based_layout_step(positions, edges):
     # Compute forces
     for vertex in positions:
         fx, fy = 0, 0
+        
+        # Repulsion forces
         for v in positions:
             if vertex != v:
-                cfx, cfy = _coulomb_repulsion(vertex.center, v.center)
+                cfx, cfy = _coulomb_repulsion(vertex, v)
                 fx += cfx
                 fy += cfy
+        
+        # Spring forces
         for edge in edges:
             if edge.origin == vertex or edge.end == vertex:                
                 # Compute coordinates of edge
@@ -74,6 +75,7 @@ def _force_based_layout_step(positions, edges):
                 hfx, hfy = _hooke_attraction(vertexpos, otherpos)
                 fx += hfx
                 fy += hfy
+        
         forces[vertex] = fx, fy
                 
     # Compute new positions
