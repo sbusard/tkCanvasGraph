@@ -75,49 +75,15 @@ class Vertex:
     def center(self):
         return self._center_from_coords(*self.canvas.coords(self.handle))
     
-    def distance_vector_from(self, end):
-        """
-        Return the distance vector (x,y) from the end vertex.
-        """
-        xo0, yo0, xo1, yo1 = self.canvas.bbox(self.handle)
-        xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
-        xe0, ye0, xe1, ye1 = self.canvas.bbox(end.handle)
-        xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
-
-        ao = xo1 - xoc
-        bo = yo1 - yoc
-        ae = xe1 - xec
-        be = ye1 - yec
-
-        if xec != xoc:
-            m = (yec - yoc) / (xec - xoc)
-
-            dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
-            dex = (ae * be) / math.sqrt(ae * ae * m * m + be * be)
-            doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
-            dey = (ae * be * m) / math.sqrt(ae * ae * m * m + be * be)
-
-        else:
-            dox = dex = 0
-            doy = bo * (-1 if yec > yoc else 1)
-            dey = be * (-1 if yec > yoc else 1)
-
-        dbbox = (xoc + dox if xec >= xoc else xoc - dox,
-                 yoc + doy if xec > xoc else yoc - doy,
-                 xec - dex if xec >= xoc else xec + dex,
-                 yec - dey if xec > xoc else yec + dey)
-        
-        if xoc < xec:
-            dx = dbbox[2] - dbbox[0]
-        else:
-            dx = dbbox[0] - dbbox[2]
-        if yoc < yec:
-            dy = dbbox[3] - dbbox[1]
-        else:
-            dy = dbbox[1] - dbbox[3]
-        dx = dbbox[2] - dbbox[0]
-        dy = dbbox[3] - dbbox[1]
-        return dx, dy
+    @property
+    def bbox(self):
+        return self.canvas.bbox(self.handle)
+    
+    @property
+    def dimensions(self):
+        """Return this vertex width and height."""
+        x0, y0, x1, y1 = self.bbox
+        return x1-x0, y1-y0
     
     def _center_from_coords(self, x0, y0, x1, y1):
         """Return the center of the rectangle given by (x0, y0) and (x1, y1)."""
@@ -238,27 +204,6 @@ class Edge:
         dx = x1 - x0
         dy = y1 - y0
         return math.sqrt(dx*dx + dy*dy)
-    
-    @property
-    def ends_coordinates(self):
-        """
-        Return (xo, yo), (xe, ye), the coordinates of the ends of this edge,
-        connected to origin and end, respectively.
-        """
-        x0, y0, x1, y1 = self.canvas.coords(self.handle)
-        ox, oy = self.origin.center
-        ex, ey = self.end.center
-        
-        odist = math.sqrt((ox-x0)*(ox-x0) + (oy-y0)*(oy-y0))
-        edist = math.sqrt((ex-x0)*(ex-x0) + (ey-y0)*(ey-y0))
-        if odist < edist: # The x0, y0 is closer to origin
-            opos = x0, y0
-            epos = x1, y1
-        else:
-            opos = x1, y1
-            epos = x0, y0
-        
-        return opos, epos
     
     @property
     def label(self):

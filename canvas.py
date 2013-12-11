@@ -5,7 +5,7 @@ from observable import ObservableSet
 from mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
 from graph import Vertex, Edge
-from layout import force_based_layout
+from layout import force_based_layout, force_based_layout_step
 
 # Padding for scroll region
 PADDING=10
@@ -31,17 +31,36 @@ class CanvasGraph(tk.Canvas):
         self.config(scrollregion=self.bbox("all"))
         
         self.focus_set()
-        self.bind("r", self.start_layout)
+        
+        # Interactive layout
+        self.bind("i", self.start_layout)
+        self.layouting = False
+        
+        # One-shot layout
+        self.bind("r", self.layout)
+    
+    def layout(self, event):
+        self.layouting = False
+        
+        # Compute new positions
+        vertices = {vertex:vertex.center for vertex in self.vertices}
+        np = force_based_layout(vertices, self.edges, fixed=self.selected)
+        
+        # Move graph
+        for vertex in np:
+            vertex.move_to(*np[vertex])
+        for e in self.edges:
+            e.move()
+        self.update_scrollregion()
     
     def start_layout(self, event):
-        vertices = {vertice:vertice.center for vertice in self.vertices}
-        nps = force_based_layout(vertices, self.edges)
-        
-        def layout():
-            if self.new_event:
+        def iter_layout():
+            if not self.layouting:
                 return
             try:
-                np = nps.__next__()
+                vertices = {vertex:vertex.center for vertex in self.vertices}
+                np, sf = force_based_layout_step(vertices, self.edges,
+                                                 fixed=self.selected)
                 
                 for vertex in np:
                     vertex.move_to(*np[vertex])
@@ -50,13 +69,17 @@ class CanvasGraph(tk.Canvas):
 
                 self.update_scrollregion()
                 
-                self.after(10, layout)
+                if self.layouting:
+                    self.after(20, iter_layout)
                 
             except StopIteration:
                 pass
         
-        self.new_event = False
-        self.after(10, layout)
+        if not self.layouting:
+            self.layouting = True
+            self.after(20, iter_layout)
+        else:
+            self.layouting = False
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
