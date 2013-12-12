@@ -2,11 +2,11 @@ import tkinter as tk
 import math
 import random
 
-from observable import ObservableSet
-from mouse import (SelectingMouse, SelectionModifyingMouse,
+from .observable import ObservableSet
+from .mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
-from graph import Vertex, Edge
-from layout import force_based_layout, force_based_layout_step
+from .graph import Vertex, Edge
+from .layout import force_based_layout, force_based_layout_step
 
 # Padding for scroll region
 PADDING=10

@@ -1,7 +1,7 @@
 import math
 import tkinter as tk
 
-from exception import UnknownCanvasError
+from .exception import UnknownCanvasError
 
 # Radius of circles representing vertices
 VERTEXRADIUS=10
