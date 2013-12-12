@@ -43,14 +43,14 @@ class CanvasGraph(tk.Canvas):
         self.layouting = False
         
         # Compute new positions
-        vertices = {vertex:vertex.center for vertex in self.vertices}
-        np = force_based_layout(vertices, self.edges, fixed=self.selected)
+        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
+        np = force_based_layout(self, vertices, self.edges, fixed=self.selected)
         
         # Move graph
         for vertex in np:
-            vertex.move_to(*np[vertex])
+            vertex.move_to(self, *np[vertex])
         for e in self.edges:
-            e.move()
+            e.move(self)
         self.update_scrollregion()
     
     def start_layout(self, event):
@@ -58,14 +58,15 @@ class CanvasGraph(tk.Canvas):
             if not self.layouting:
                 return
             try:
-                vertices = {vertex:vertex.center for vertex in self.vertices}
-                np, sf = force_based_layout_step(vertices, self.edges,
+                vertices = {vertex:vertex.center(self)
+                            for vertex in self.vertices}
+                np, sf = force_based_layout_step(self, vertices, self.edges,
                                                  fixed=self.selected)
                 
                 for vertex in np:
-                    vertex.move_to(*np[vertex])
+                    vertex.move_to(self, *np[vertex])
                 for e in self.edges:
-                    e.move()
+                    e.move(self)
 
                 self.update_scrollregion()
                 
@@ -97,7 +98,8 @@ class CanvasGraph(tk.Canvas):
     
     def new_vertex(self, x, y, label=""):
         """Add a vertex at (x,y)."""
-        v = Vertex(self, x, y, label)
+        v = Vertex(label)
+        v.draw(self, x, y)
         
         # Update scrollregion
         self.update_scrollregion()
@@ -105,25 +107,25 @@ class CanvasGraph(tk.Canvas):
         self.vertices.add(v)
         
         # Update elements
-        self.elements[v.handle] = v
-        if v.labelhandle is not None:
-            self.elements[v.labelhandle] = v
+        for handle in v.handles(self):
+            self.elements[handle] = v
     
     def new_edge(self, orig, end, label=""):
         """Add an edge from orig to end, if none exists."""
         if len(list(e for e in self.edges
                     if e.origin == orig and e.end == end)) <= 0:
             # No pre-existing edge, build it
-            e = Edge(self, orig, end, label)
+            e = Edge(orig, end, label)
+            e.draw(self)
             self.edges.add(e)
     
     def move_vertices(self, vertices, dx, dy):
         """Move the vertices and the connected edges of (dx,dy)."""
         for v in vertices:
-            v.move(dx, dy)
+            v.move(self, dx, dy)
             for e in self.edges:
                 if e.origin == v or e.end == v:
-                    e.move()
+                    e.move(self)
         
         # Update scrollregion
         self.update_scrollregion()
@@ -133,21 +135,20 @@ class CanvasGraph(tk.Canvas):
         if observed is self.selected:
             for v in self.vertices:
                 if v in self.selected:
-                    v.select()
+                    v.select(self)
                 else:
-                    v.deselect()
-        
-        if observed in self.elements.values():
-            keys = {k for k in self.elements if self.elements[k] == observed}
+                    v.deselect(self)
+    
+    def update_vertex(self, vertex):
+        if vertex in self.elements.values():
+            keys = {k for k in self.elements if self.elements[k] == vertex}
             for key in keys:
                 del self.elements[key]
-            self.elements[observed.handle] = observed
-            if observed.labelhandle != None:
-                self.elements[observed.labelhandle] = observed
+            for handle in vertex.handles(self):
+                self.elements[handle] = vertex
             for e in self.edges:
-                if e.origin == observed or e.end == observed:
+                if e.origin == vertex or e.end == vertex:
                     e.move()
-    
     
     def update_scrollregion(self):
         minx, miny, maxx, maxy = self.bbox("all")
@@ -192,6 +193,47 @@ class CanvasGraph(tk.Canvas):
                 if not mouse.released(event):
                     break
 
+
+def show_graph_in_canvas(vertices, edges):
+    """
+    Create a new window with a canvas and add all given vertices and edges.
+    """
+    root = tk.Tk()
+    
+    frame = tk.Frame(root)
+
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_columnconfigure(0, weight=1)
+
+    xscrollbar = tk.Scrollbar(frame, orient=tk.HORIZONTAL)
+    xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+    yscrollbar = tk.Scrollbar(frame)
+    yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+    canvas = CanvasGraph(frame, xscrollcommand=xscrollbar.set,
+                                yscrollcommand=yscrollbar.set)
+
+    canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+    xscrollbar.config(command=canvas.xview)
+    yscrollbar.config(command=canvas.yview)
+    
+    frame.pack(fill="both", expand=True)
+    
+    # Mouses for the canvas
+    sm = SelectingMouse(canvas, selection=canvas.selected,
+                        elements=canvas.vertices,
+                        button="1", modifier="")
+    smm = SelectionModifyingMouse(canvas, selection=canvas.selected,
+                                  elements=canvas.vertices,
+                                  button="1", modifier="Shift")
+    mm = MovingMouse(canvas, canvas.selected,
+                     button="1", modifier="")
+    
+    # TODO Add vertices and edges
+    
+    root.mainloop()
 
 
 if __name__ == "__main__":

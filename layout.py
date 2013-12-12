@@ -7,11 +7,12 @@ electricalRepulsion = 250
 iterationNumber = 1000
 forceThreshold = 0.001
 
-def _hooke_attraction(origin, end):
+def _hooke_attraction(canvas, origin, end):
     """
     Return the force produced by the spring between origin and end, applied
     on origin.
     
+    canvas -- the canvas of interest;
     origin -- an x,y couple;
     end -- an x,y couple.
     """
@@ -26,13 +27,13 @@ def _hooke_attraction(origin, end):
     
     return fx, fy
 
-def _distance_vector_from(vertex, other):
+def _distance_vector_from(canvas, vertex, other):
     """
     Return the distance vector (x,y) from vertex to the other vertex.
     """
-    xo0, yo0, xo1, yo1 = vertex.bbox
+    xo0, yo0, xo1, yo1 = vertex.bbox(canvas)
     xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
-    xe0, ye0, xe1, ye1 = other.bbox
+    xe0, ye0, xe1, ye1 = other.bbox(canvas)
     xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
     
     ao = xo1 - xoc
@@ -70,14 +71,15 @@ def _distance_vector_from(vertex, other):
     dy = dbbox[3] - dbbox[1]
     return dx, dy
 
-def _coulomb_repulsion(vertex, other):
+def _coulomb_repulsion(canvas, vertex, other):
     """
     Return the electrical force produced by the other vertex on vertex.
     
+    canvas -- the canvas of interest;
     vertexbbox -- a vertex;
     otherbbox -- another vertex.
     """
-    dx, dy = _distance_vector_from(vertex, other)
+    dx, dy = _distance_vector_from(canvas, vertex, other)
     distance = math.sqrt(dx*dx + dy*dy)
     
     fx = -electricalRepulsion * dx / (distance*distance)
@@ -85,10 +87,10 @@ def _coulomb_repulsion(vertex, other):
     
     return fx, fy
 
-def _coords_from_ends(positions, origin, end):
-    wo, ho = origin.dimensions
+def _coords_from_ends(canvas, positions, origin, end):
+    wo, ho = origin.dimensions(canvas)
     xoc, yoc = positions[origin]
-    we, he = end.dimensions
+    we, he = end.dimensions(canvas)
     xec, yec = positions[end]
 
     ao = wo/2
@@ -114,11 +116,13 @@ def _coords_from_ends(positions, origin, end):
             (xec - dex if xec >= xoc else xec + dex,
              yec - dey if xec > xoc else yec + dey))
 
-def force_based_layout_step(positions, edges, fixed=None):
+def force_based_layout_step(canvas, positions, edges, fixed=None):
     """
-    Return the new positions of vertices in positions, given edges between them.
+    Return the new positions of vertices in positions on canvas,
+    given edges between them.
     If fixed is not None, only vertices out of fixed are moved.
     
+    canvas -- the canvas on which operate;
     positions -- a dictionary of vertex -> x,y coordinates values;
     edges -- a set of edges between vertices of positions;
     fixed -- a set of vertices.
@@ -134,7 +138,7 @@ def force_based_layout_step(positions, edges, fixed=None):
         # Repulsion forces
         for v in positions:
             if vertex != v:
-                cfx, cfy = _coulomb_repulsion(vertex, v)
+                cfx, cfy = _coulomb_repulsion(canvas, vertex, v)
                 fx += cfx
                 fy += cfy
         
@@ -142,7 +146,7 @@ def force_based_layout_step(positions, edges, fixed=None):
         for edge in edges:
             if edge.origin == vertex or edge.end == vertex:
                 # Compute coordinates of edge
-                opos, epos = _coords_from_ends(positions, edge.origin,
+                opos, epos = _coords_from_ends(canvas, positions, edge.origin,
                                                edge.end)
                 
                 if edge.origin == vertex:
@@ -152,7 +156,7 @@ def force_based_layout_step(positions, edges, fixed=None):
                     vertexpos = epos
                     otherpos = opos
                 
-                hfx, hfy = _hooke_attraction(vertexpos, otherpos)
+                hfx, hfy = _hooke_attraction(canvas, vertexpos, otherpos)
                 fx += hfx
                 fy += hfy
         
@@ -175,14 +179,15 @@ def force_based_layout_step(positions, edges, fixed=None):
     
     return newPositions, sumForces/len(newPositions)
 
-def force_based_layout(vertices, edges, fixed=None):
+def force_based_layout(canvas, vertices, edges, fixed=None):
     """
-    Return the new positions of vertices, given their initial positions and
-    their connected edges.
+    Return the new positions of vertices on canvas,
+    given their initial positions and their connected edges.
     Return a dictionary of vertices -> positions pairs, with new positions of
     the vertices.
     If fixed is not None, only vertices out of fixed are moved.
     
+    canvas   -- the canvas on which operate;
     vertices -- a dictionary of vertices -> position pairs, where positions
                 are couples of x,y coordinates
     edges    -- a set of couples (v1, v2) where v1 and v2 belong to vertices;
@@ -190,7 +195,7 @@ def force_based_layout(vertices, edges, fixed=None):
     """
     np = vertices
     for i in range(iterationNumber):
-        np, sf = force_based_layout_step(np, edges, fixed=fixed)
+        np, sf = force_based_layout_step(canvas, np, edges, fixed=fixed)
         if sf < forceThreshold:
             break
     return np
