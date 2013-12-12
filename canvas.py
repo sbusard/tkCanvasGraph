@@ -63,7 +63,15 @@ class CanvasGraph(tk.Canvas):
         
         # Compute new positions
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
-        np = force_based_layout(self, vertices, self.edges, fixed=self.selected)
+        edges = set()
+        for edge in self.edges:
+            # Add edge in edges if no edge in edges already share
+            # the extremities
+            if len([e for e in edges
+                     if (e.origin == edge.origin and e.end == edge.end)
+                     or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
+                edges.add(edge)
+        np = force_based_layout(self, vertices, edges, fixed=self.selected)
         
         # Move graph
         for vertex in np:
@@ -79,7 +87,16 @@ class CanvasGraph(tk.Canvas):
             try:
                 vertices = {vertex:vertex.center(self)
                             for vertex in self.vertices}
-                np, sf = force_based_layout_step(self, vertices, self.edges,
+                
+                edges = set()
+                for edge in self.edges:
+                    # Add edge in edges if no edge in edges already share
+                    # the extremities
+                    if len([e for e in edges
+                             if (e.origin == edge.origin and e.end == edge.end)
+                      or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
+                        edges.add(edge)
+                np, sf = force_based_layout_step(self, vertices, edges,
                                                  fixed=self.selected)
                 
                 for vertex in np:
