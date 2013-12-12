@@ -47,9 +47,9 @@ class Vertex:
         
         # Add label on canvas and store handle
         if self.label != "":
-            self._labelhandles[canvas] = self.canvas.create_text(x, y,
-                                                       text=self.label,
-                                                       justify=tk.CENTER)
+            self._labelhandles[canvas] = canvas.create_text(x, y,
+                                                            text=self.label,
+                                                            justify=tk.CENTER)
             x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandles[canvas])
             
             # Draw on canvas and store handle

@@ -1,5 +1,6 @@
 import tkinter as tk
 import math
+import random
 
 from observable import ObservableSet
 from mouse import (SelectingMouse, SelectionModifyingMouse,
@@ -38,6 +39,24 @@ class CanvasGraph(tk.Canvas):
         
         # One-shot layout
         self.bind("r", self.layout)
+        
+        # Random adding
+        def addv(event):
+            v = Vertex(str(random.randint(0,100)))
+            self.add_vertex(v)
+        self.bind("j", addv)
+        def adde(event):
+            pairs = [(o, e) for o in self.vertices
+                            for e in self.vertices
+                            if o != e
+                            if len([edge for edge in self.edges
+                                         if edge.origin == o
+                                            and edge.end == e]) <= 0]
+            if len(pairs) > 0:
+                o, e = random.choice(pairs)
+                edge = Edge(o, e)
+                self.add_edge(edge)
+        self.bind("k", adde)
     
     def layout(self, event):
         self.layouting = False
@@ -99,16 +118,7 @@ class CanvasGraph(tk.Canvas):
     def new_vertex(self, x, y, label=""):
         """Add a vertex at (x,y)."""
         v = Vertex(label)
-        v.draw(self, x, y)
-        
-        # Update scrollregion
-        self.update_scrollregion()
-            
-        self.vertices.add(v)
-        
-        # Update elements
-        for handle in v.handles(self):
-            self.elements[handle] = v
+        self.add_vertex(v, (x, y))
     
     def new_edge(self, orig, end, label=""):
         """Add an edge from orig to end, if none exists."""
@@ -116,8 +126,42 @@ class CanvasGraph(tk.Canvas):
                     if e.origin == orig and e.end == end)) <= 0:
             # No pre-existing edge, build it
             e = Edge(orig, end, label)
-            e.draw(self)
-            self.edges.add(e)
+            self.add_edge(e)
+    
+    def add_vertex(self, vertex, position=None):
+        """
+        Add the given vertex on this canvas at position, if specified.
+        
+        vertex -- the vertex to add and draw;
+        position -- if not None, an x,y tuple.
+        """
+        # Compute position if not specified;
+        # The vertex is added at random in the scroll region, if it is
+        # large enough.
+        if position is None:
+            if self.bbox("all") is None:
+                position = 0,0
+            else:
+                x0, y0, x1, y1 = self.bbox("all")
+                dx = x1-x0 if x1-x0 > 100 else 100
+                dy = y1-y0 if y1-y0 > 100 else 100
+                x, y = random.randint(0,dx), random.randint(0, dy)
+                position = x0 + x, y0 + y
+        
+        vertex.draw(self, *position)
+        self.update_scrollregion()
+        self.vertices.add(vertex)
+        for handle in vertex.handles(self):
+            self.elements[handle] = vertex
+    
+    def add_edge(self, edge):
+        """
+        Add the given edge on this canvas and draw it.
+        
+        edge -- the edge to add.
+        """
+        edge.draw(self)
+        self.edges.add(edge)
     
     def move_vertices(self, vertices, dx, dy):
         """Move the vertices and the connected edges of (dx,dy)."""
@@ -232,6 +276,8 @@ def show_graph_in_canvas(vertices, edges):
                      button="1", modifier="")
     
     # TODO Add vertices and edges
+    canvas.add_vertices(vertices)
+    canvas.add_edges(edges)
     
     root.mainloop()
 
