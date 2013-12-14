@@ -2,30 +2,12 @@ import math
 
 springLength = 60
 springStiffness = 0.25
-electricalRepulsion = 250
+electricalRepulsion = 500
 
 iterationNumber = 1000
 forceThreshold = 0.001
 
-def _hooke_attraction(canvas, origin, end):
-    """
-    Return the force produced by the spring between origin and end, applied
-    on origin.
-    
-    canvas -- the canvas of interest;
-    origin -- an x,y couple;
-    end -- an x,y couple.
-    """
-    xv, yv = origin
-    xe, ye = end
-    dx = xv - xe
-    dy = yv - ye
-    distance = math.sqrt(dx*dx + dy*dy)
-    
-    fx = springStiffness * (springLength - distance) * dx / distance
-    fy = springStiffness * (springLength - distance) * dy / distance
-    
-    return fx, fy
+maxForce = 10
 
 def _distance_vector_from(canvas, vertex, other):
     """
@@ -71,50 +53,76 @@ def _distance_vector_from(canvas, vertex, other):
     dy = dbbox[3] - dbbox[1]
     return dx, dy
 
+def _hooke_attraction(canvas, vertex, other):
+    """
+    Return the force produced by the spring between vertex and other, applied
+    on vertex.
+    
+    canvas -- the canvas of interest;
+    vertex -- a vertex;
+    other -- another vertex.
+    """
+    dx, dy = _distance_vector_from(canvas, vertex, other)
+    
+    distance = math.sqrt(dx*dx + dy*dy)
+    
+    # Use center to check when vertices overlap
+    vx, vy = vertex.center(canvas)
+    ox, oy = other.center(canvas)
+    cdx = ox - vx
+    cdy = oy - vy
+    
+    # Overlap: when overlapping (or too close) use center instead of border
+    if dx * cdx < 0:
+        dx = -dx
+    if dy * cdy < 0:
+        dy = -dy
+    if distance < 10:
+        dx = cdx
+        dy = cdy
+    
+    force = -springStiffness * (springLength - distance) / distance
+    force = min(force, maxForce)
+    force = max(force, -maxForce)
+    fx = force * dx
+    fy = force * dy
+    
+    return fx, fy
+
 def _coulomb_repulsion(canvas, vertex, other):
     """
     Return the electrical force produced by the other vertex on vertex.
     
     canvas -- the canvas of interest;
-    vertexbbox -- a vertex;
-    otherbbox -- another vertex.
+    vertex -- a vertex;
+    other -- another vertex.
     """
     dx, dy = _distance_vector_from(canvas, vertex, other)
+    
     distance = math.sqrt(dx*dx + dy*dy)
     
-    fx = -electricalRepulsion * dx / (distance*distance)
-    fy = -electricalRepulsion * dy / (distance*distance)
+    # Use center to check when vertices overlap
+    vx, vy = vertex.center(canvas)
+    ox, oy = other.center(canvas)
+    cdx = ox - vx
+    cdy = oy - vy
+    
+    # Overlap: when overlapping (or too close) use center instead of border
+    if dx * cdx < 0:
+        dx = -dx
+    if dy * cdy < 0:
+        dy = -dy
+    if distance < 10:
+        dx = cdx
+        dy = cdy
+    
+    force = -electricalRepulsion / (distance*distance)
+    force = min(force, maxForce)
+    force = max(force, -maxForce)
+    fx = force * dx
+    fy = force * dy
     
     return fx, fy
-
-def _coords_from_ends(canvas, positions, origin, end):
-    wo, ho = origin.dimensions(canvas)
-    xoc, yoc = positions[origin]
-    we, he = end.dimensions(canvas)
-    xec, yec = positions[end]
-
-    ao = wo/2
-    bo = ho/2
-    ae = we/2
-    be = he/2
-
-    if xec != xoc:
-        m = (yec - yoc) / (xec - xoc)
-
-        dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
-        dex = (ae * be) / math.sqrt(ae * ae * m * m + be * be)
-        doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
-        dey = (ae * be * m) / math.sqrt(ae * ae * m * m + be * be)
-
-    else:
-        dox = dex = 0
-        doy = bo * (-1 if yec > yoc else 1)
-        dey = be * (-1 if yec > yoc else 1)
-
-    return ((xoc + dox if xec >= xoc else xoc - dox,
-             yoc + doy if xec > xoc else yoc - doy),
-            (xec - dex if xec >= xoc else xec + dex,
-             yec - dey if xec > xoc else yec + dey))
 
 def force_based_layout_step(canvas, positions, edges, fixed=None):
     """
@@ -145,18 +153,12 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
         # Spring forces
         for edge in edges:
             if edge.origin == vertex or edge.end == vertex:
-                # Compute coordinates of edge
-                opos, epos = _coords_from_ends(canvas, positions, edge.origin,
-                                               edge.end)
-                
                 if edge.origin == vertex:
-                    vertexpos = opos
-                    otherpos = epos
+                    other = edge.end
                 else:
-                    vertexpos = epos
-                    otherpos = opos
+                    other = edge.origin
                 
-                hfx, hfy = _hooke_attraction(canvas, vertexpos, otherpos)
+                hfx, hfy = _hooke_attraction(canvas, vertex, other)
                 fx += hfx
                 fy += hfy
         

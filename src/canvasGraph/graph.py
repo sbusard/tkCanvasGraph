@@ -193,11 +193,12 @@ class Edge:
         
         # Add label on canvas and store handle
         if self.label != "":
-            x, y = self._center_from_coords(*canvas.coords(handle))
-            labelhandle = canvas.create_text(x, y, text=label,
+            x0, y0, x1, y1 = canvas.coords(handle)
+            x, y = ((x0 + x1) / 2, (y0 + y1) / 2)
+            labelhandle = canvas.create_text(x, y, text=self.label,
                                              justify=tk.CENTER)
             self._labelhandles[canvas] = labelhandle
-            self._labelbghandle[canvas] = canvas.create_rectangle(
+            self._labelbghandles[canvas] = canvas.create_rectangle(
                                     *canvas.bbox(labelhandle),
                                     fill="white", outline="white")
             canvas.tag_raise(labelhandle)
