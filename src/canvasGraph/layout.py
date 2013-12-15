@@ -78,10 +78,6 @@ def _hooke_attraction(canvas, vertex, other):
     # Overlap: when overlapping, ignore the force
     if (ocx - vcx) * (dx1 - dx0) < 0 or (ocy - vcy) * (dy1 - dy0) < 0:
         return 0, 0
-    #if (ocx - vcx) * (dx1 - dx0) < 0:
-    #    dx0, dx1 = dx1, dx0
-    #if (ocy - vcy) * (dy1 - dy0) < 0:
-    #    dy0, dy1 = dy1, dy0
     
     dx, dy = dx1 - dx0, dy1 - dy0
     
@@ -160,8 +156,8 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
                     other = edge.origin
                 
                 hfx, hfy = _hooke_attraction(canvas, vertex, other)
-                #fx += hfx
-                #fy += hfy
+                fx += hfx
+                fy += hfy
         
         forces[vertex] = fx, fy
                 

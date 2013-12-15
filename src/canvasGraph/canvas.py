@@ -40,6 +40,9 @@ class CanvasGraph(tk.Canvas):
         # One-shot layout
         self.bind("r", self.layout)
         
+        # One step of layout
+        self.bind("o", self.one_step_layout)
+        
         # Random adding
         def addv(event):
             v = Vertex(str(random.randint(0,100)) +
@@ -61,7 +64,28 @@ TEST3=TEST3""")
                 edge = Edge(o, e)
                 self.add_edge(edge)
         self.bind("k", adde)
+
+    def one_step_layout(self, event):
+        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
+        edges = set()
+        for edge in self.edges:
+            # Add edge in edges if no edge in edges already share
+            # the extremities
+            if (len([e for e in edges
+                       if (e.origin == edge.origin and e.end == edge.end)
+                       or (e.origin == edge.end and e.end == edge.origin)])
+                    <= 0):
+                edges.add(edge)
+        np, sf = force_based_layout_step(self, vertices, edges,
+                                         fixed=self.selected)
     
+        for vertex in np:
+            vertex.move_to(self, *np[vertex])
+        for e in self.edges:
+            e.move(self)
+        
+        self.update_scrollregion()
+
     def layout(self, event):
         self.layouting = False
         
@@ -88,37 +112,34 @@ TEST3=TEST3""")
         def iter_layout():
             if not self.layouting:
                 return
-            try:
-                vertices = {vertex:vertex.center(self)
-                            for vertex in self.vertices}
-                
-                edges = set()
-                for edge in self.edges:
-                    # Add edge in edges if no edge in edges already share
-                    # the extremities
-                    if len([e for e in edges
-                             if (e.origin == edge.origin and e.end == edge.end)
+            
+            vertices = {vertex:vertex.center(self)
+                        for vertex in self.vertices}
+            
+            edges = set()
+            for edge in self.edges:
+                # Add edge in edges if no edge in edges already share
+                # the extremities
+                if len([e for e in edges
+                         if (e.origin == edge.origin and e.end == edge.end)
                       or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
-                        edges.add(edge)
-                np, sf = force_based_layout_step(self, vertices, edges,
-                                                 fixed=self.selected)
-                
-                for vertex in np:
-                    vertex.move_to(self, *np[vertex])
-                for e in self.edges:
-                    e.move(self)
-
-                self.update_scrollregion()
-                
-                if self.layouting:
-                    self.after(20, iter_layout)
-                
-            except StopIteration:
-                pass
+                    edges.add(edge)
+            np, sf = force_based_layout_step(self, vertices, edges,
+                                             fixed=self.selected)
+            
+            for vertex in np:
+                vertex.move_to(self, *np[vertex])
+            for e in self.edges:
+                e.move(self)
+            
+            self.update_scrollregion()
+            
+            if self.layouting:
+                self.after(25, iter_layout)
         
         if not self.layouting:
             self.layouting = True
-            self.after(20, iter_layout)
+            self.after(25, iter_layout)
         else:
             self.layouting = False
     
