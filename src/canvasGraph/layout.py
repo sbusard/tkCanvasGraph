@@ -11,47 +11,54 @@ maxForce = 10
 
 def _distance_vector_from(canvas, vertex, other):
     """
-    Return the distance vector (x,y) from vertex to the other vertex.
+    Return the distance vector from vertex to the other vertex.
+    If vertex is at greater position than other,
+    the distance vector is negative.
+    
+    Warning: if vertices overlap, the vector is directed towards vertex.
+    
+            |               ____
+            |      dv      /
+      v     /____________>/
+           /             /      o
+    ______/             |
+                        |
     """
-    xo0, yo0, xo1, yo1 = vertex.bbox(canvas)
+    
+    xv0, yv0, xv1, yv1 = vertex.bbox(canvas)
+    xvc, yvc = (xv1 + xv0) / 2, (yv1 + yv0) / 2
+    xo0, yo0, xo1, yo1 = other.bbox(canvas)
     xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
-    xe0, ye0, xe1, ye1 = other.bbox(canvas)
-    xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
     
-    ao = xo1 - xoc
-    bo = yo1 - yoc
-    ae = xe1 - xec
-    be = ye1 - yec
+    av = xv1 - xvc      #    +---a-----|
+    bv = yv1 - yvc      #    |         |
+    ao = xo1 - xoc      #    b        /
+    bo = yo1 - yoc      #    |      /
+                        #   _|____/
     
-    if xec != xoc:
-        m = (yec - yoc) / (xec - xoc)
-    
-        dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
-        dex = (ae * be) / math.sqrt(ae * ae * m * m + be * be)
-        doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
-        dey = (ae * be * m) / math.sqrt(ae * ae * m * m + be * be)
+    if xoc != xvc:
+        m = abs((yoc - yvc) / (xoc - xvc))
+        
+        dvx = (av * bv) / math.sqrt(av*av * m*m + bv*bv)
+        dvx *= -1 if xoc < xvc else 1
+        
+        dox = (ao * bo) / math.sqrt(ao*ao * m*m + bo*bo)
+        dox *= -1 if xoc > xvc else 1
+        
+        dvy = (av * bv * m) / math.sqrt(av*av * m*m + bv*bv)
+        dvy *= -1 if yoc < yvc else 1
+        
+        doy = (ao * bo * m) / math.sqrt(ao*ao * m*m + bo*bo)
+        doy *= -1 if yoc > yvc else 1
     
     else:
-        dox = dex = 0
-        doy = bo * (-1 if yec > yoc else 1)
-        dey = be * (-1 if yec > yoc else 1)
+        dvx = dox = 0
+        dvy = bv
+        dvy *= -1 if yoc < yvc else 1
+        doy = bo
+        doy *= -1 if yoc > yvc else 1
     
-    dbbox = (xoc + dox if xec >= xoc else xoc - dox,
-             yoc + doy if xec > xoc else yoc - doy,
-             xec - dex if xec >= xoc else xec + dex,
-             yec - dey if xec > xoc else yec + dey)
-    
-    if xoc < xec:
-        dx = dbbox[2] - dbbox[0]
-    else:
-        dx = dbbox[0] - dbbox[2]
-    if yoc < yec:
-        dy = dbbox[3] - dbbox[1]
-    else:
-        dy = dbbox[1] - dbbox[3]
-    dx = dbbox[2] - dbbox[0]
-    dy = dbbox[3] - dbbox[1]
-    return dx, dy
+    return (xvc + dvx, yvc + dvy, xoc + dox, yoc + doy)
 
 def _hooke_attraction(canvas, vertex, other):
     """
@@ -62,28 +69,26 @@ def _hooke_attraction(canvas, vertex, other):
     vertex -- a vertex;
     other -- another vertex.
     """
-    dx, dy = _distance_vector_from(canvas, vertex, other)
+    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, vertex, other)
+    
+    # Use center to check when vertices overlap
+    vcx, vcy = vertex.center(canvas)
+    ocx, ocy = other.center(canvas)
+    
+    # Overlap: when overlapping, ignore the force
+    if (ocx - vcx) * (dx1 - dx0) < 0 or (ocy - vcy) * (dy1 - dy0) < 0:
+        return 0, 0
+    #if (ocx - vcx) * (dx1 - dx0) < 0:
+    #    dx0, dx1 = dx1, dx0
+    #if (ocy - vcy) * (dy1 - dy0) < 0:
+    #    dy0, dy1 = dy1, dy0
+    
+    dx, dy = dx1 - dx0, dy1 - dy0
     
     distance = math.sqrt(dx*dx + dy*dy)
     
-    # Use center to check when vertices overlap
-    vx, vy = vertex.center(canvas)
-    ox, oy = other.center(canvas)
-    cdx = ox - vx
-    cdy = oy - vy
-    
-    # Overlap: when overlapping (or too close) use center instead of border
-    if dx * cdx < 0:
-        dx = -dx
-    if dy * cdy < 0:
-        dy = -dy
-    if distance < 10:
-        dx = cdx
-        dy = cdy
-    
     force = -springStiffness * (springLength - distance) / distance
-    force = min(force, maxForce)
-    force = max(force, -maxForce)
+    force = max(min(force, maxForce), -maxForce)
     fx = force * dx
     fy = force * dy
     
@@ -97,28 +102,24 @@ def _coulomb_repulsion(canvas, vertex, other):
     vertex -- a vertex;
     other -- another vertex.
     """
-    dx, dy = _distance_vector_from(canvas, vertex, other)
+    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, vertex, other)
+    
+    # Use center to check when vertices overlap
+    vcx, vcy = vertex.center(canvas)
+    ocx, ocy = other.center(canvas)
+    
+    # Overlap: when overlapping inverse bounding box
+    if (ocx - vcx) * (dx1 - dx0) < 0:
+        dx0, dx1 = dx1, dx0
+    if (ocy - vcy) * (dy1 - dy0) < 0:
+        dy0, dy1 = dy1, dy0
+    
+    dx, dy = dx1 - dx0, dy1 - dy0
     
     distance = math.sqrt(dx*dx + dy*dy)
     
-    # Use center to check when vertices overlap
-    vx, vy = vertex.center(canvas)
-    ox, oy = other.center(canvas)
-    cdx = ox - vx
-    cdy = oy - vy
-    
-    # Overlap: when overlapping (or too close) use center instead of border
-    if dx * cdx < 0:
-        dx = -dx
-    if dy * cdy < 0:
-        dy = -dy
-    if distance < 10:
-        dx = cdx
-        dy = cdy
-    
     force = -electricalRepulsion / (distance*distance)
-    force = min(force, maxForce)
-    force = max(force, -maxForce)
+    force = max(min(force, maxForce), -maxForce)
     fx = force * dx
     fy = force * dy
     
@@ -159,8 +160,8 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
                     other = edge.origin
                 
                 hfx, hfy = _hooke_attraction(canvas, vertex, other)
-                fx += hfx
-                fy += hfy
+                #fx += hfx
+                #fy += hfy
         
         forces[vertex] = fx, fy
                 
