@@ -1,7 +1,7 @@
 import math
 
-springLength = 60
-springStiffness = 0.25
+minSpringLength = 60
+springStiffness = 0.1
 electricalRepulsion = 500
 
 iterationNumber = 1000
@@ -83,7 +83,12 @@ def _hooke_attraction(canvas, vertex, other):
     
     distance = math.sqrt(dx*dx + dy*dy)
     
-    force = -springStiffness * (springLength - distance) / distance
+    # Spring length is sum of radiuses of vertices
+    dcx, dcy = ocx - vcx, ocy - vcy
+    length = math.sqrt(dcx*dcx + dcy*dcy) - distance
+    length = max(length, minSpringLength)
+    
+    force = -springStiffness * (length - distance) / distance
     force = max(min(force, maxForce), -maxForce)
     fx = force * dx
     fy = force * dy
