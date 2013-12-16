@@ -237,9 +237,11 @@ TEST3=TEST3""")
                     e.move()
     
     def update_scrollregion(self):
-        minx, miny, maxx, maxy = self.bbox("all")
-        self.config(scrollregion=(minx-PADDING, miny-PADDING,
-                                  maxx+PADDING, maxy+PADDING))
+        bbox = self.bbox("all")
+        if bbox is not None:
+            minx, miny, maxx, maxy = bbox
+            self.config(scrollregion=(minx-PADDING, miny-PADDING,
+                                      maxx+PADDING, maxy+PADDING))
     
     def register_mouse(self, mouse, button, modifier):
         """Register a new mouse for button pressed with modifier."""

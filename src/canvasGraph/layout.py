@@ -181,7 +181,8 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
         else:
             newPositions[vertex] = x, y
     
-    return newPositions, sumForces/len(newPositions)
+    return (newPositions, sumForces/len(newPositions) 
+                          if len(newPositions) > 0 else 0)
 
 def force_based_layout(canvas, vertices, edges, fixed=None):
     """
