@@ -79,12 +79,7 @@ TEST3=TEST3""")
                 edges.add(edge)
         np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
     
-        for vertex in np:
-            vertex.move_to(self, *np[vertex])
-        for e in self.edges:
-            e.move(self)
-        
-        self.update_scrollregion()
+        self.apply_positions(np)
 
     def layout(self, event):
         self.layouting = False
@@ -104,11 +99,7 @@ TEST3=TEST3""")
         np = fbl.apply(self, vertices, edges, fixed=self.selected)
         
         # Move graph
-        for vertex in np:
-            vertex.move_to(self, *np[vertex])
-        for e in self.edges:
-            e.move(self)
-        self.update_scrollregion()
+        self.apply_positions(np)
     
     def start_layout(self, event):
         osfbl = OneStepForceBasedLayout()
@@ -129,12 +120,7 @@ TEST3=TEST3""")
                     edges.add(edge)
             np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
             
-            for vertex in np:
-                vertex.move_to(self, *np[vertex])
-            for e in self.edges:
-                e.move(self)
-            
-            self.update_scrollregion()
+            self.apply_positions(np)
             
             if self.layouting:
                 self.after(25, iter_layout)
@@ -144,6 +130,19 @@ TEST3=TEST3""")
             self.after(25, iter_layout)
         else:
             self.layouting = False
+    
+    def apply_positions(self, positions):
+        """
+        Move all vertices of positions at their new position.
+        
+        positions -- a vertex -> x,y position dictionary.
+        """
+        for vertex in positions:
+            vertex.move_to(self, *positions[vertex])
+        for e in self.edges:
+            e.move(self)
+        
+        self.update_scrollregion()
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
