@@ -6,7 +6,7 @@ from .observable import ObservableSet
 from .mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
 from .graph import Vertex, Edge
-from .layout import force_based_layout, force_based_layout_step
+from .layout import ForceBasedLayout, OneStepForceBasedLayout
 
 # Padding for scroll region
 PADDING=10
@@ -66,6 +66,7 @@ TEST3=TEST3""")
         self.bind("k", adde)
 
     def one_step_layout(self, event):
+        osfbl = OneStepForceBasedLayout()
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
         edges = set()
         for edge in self.edges:
@@ -76,8 +77,7 @@ TEST3=TEST3""")
                        or (e.origin == edge.end and e.end == edge.origin)])
                     <= 0):
                 edges.add(edge)
-        np, sf = force_based_layout_step(self, vertices, edges,
-                                         fixed=self.selected)
+        np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
     
         for vertex in np:
             vertex.move_to(self, *np[vertex])
@@ -89,6 +89,8 @@ TEST3=TEST3""")
     def layout(self, event):
         self.layouting = False
         
+        fbl = ForceBasedLayout()
+        
         # Compute new positions
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
         edges = set()
@@ -99,7 +101,7 @@ TEST3=TEST3""")
                      if (e.origin == edge.origin and e.end == edge.end)
                      or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
                 edges.add(edge)
-        np = force_based_layout(self, vertices, edges, fixed=self.selected)
+        np = fbl.apply(self, vertices, edges, fixed=self.selected)
         
         # Move graph
         for vertex in np:
@@ -109,6 +111,7 @@ TEST3=TEST3""")
         self.update_scrollregion()
     
     def start_layout(self, event):
+        osfbl = OneStepForceBasedLayout()
         def iter_layout():
             if not self.layouting:
                 return
@@ -124,8 +127,7 @@ TEST3=TEST3""")
                          if (e.origin == edge.origin and e.end == edge.end)
                       or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
                     edges.add(edge)
-            np, sf = force_based_layout_step(self, vertices, edges,
-                                             fixed=self.selected)
+            np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
             
             for vertex in np:
                 vertex.move_to(self, *np[vertex])
