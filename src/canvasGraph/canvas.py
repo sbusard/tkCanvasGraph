@@ -33,18 +33,43 @@ class CanvasGraph(tk.Canvas):
         
         self.focus_set()
         
+        
+        menu = tk.Menu(self, tearoff=0)
+        
         # Interactive layout
-        self.bind("i", self.start_layout)
+        menu.add_command(label="Interactive layout",
+                         command=lambda : self.interactive_layout(),
+                         accelerator="Ctrl+i")
+        
+        self.bind("<Control-i>", lambda e: self.interactive_layout())
         self.layouting = False
         
-        # One-shot layout
-        self.bind("r", self.layout)
+        # Force-based layout
+        fbl = ForceBasedLayout()
+        menu.add_command(label="Force-based layout",
+                         command=lambda : self.layout(fbl),
+                         accelerator="Ctrl+l")
         
-        # One step of layout
-        self.bind("o", self.one_step_layout)
+        self.bind("<Control-l>", lambda e: self.layout(fbl))
         
-        # One step of layout
-        self.bind("g", self.dot_layout)
+        # Dot layout
+        dl = DotLayout()
+        menu.add_command(label="Dot layout",
+                         command=lambda : self.layout(dl),
+                         accelerator="Ctrl+d")
+        
+        self.bind("<Control-d>", lambda e: self.layout(dl))
+
+        def popup(event):
+            menu.post(event.x_root, event.y_root)
+
+        self.bind("<Button-2>", popup)
+        
+        
+        # TODO REMOVE THIS -----
+        
+        # One step of force-based layout
+        self.bind("o", lambda e: self.layout(OneStepForceBasedLayout()))
         
         # Random adding
         def addv(event):
@@ -67,11 +92,12 @@ TEST3=TEST3""")
                 edge = Edge(o, e)
                 self.add_edge(edge)
         self.bind("k", adde)
-    
-    def dot_layout(self, event):
-        self.layouting = False
         
-        dl = DotLayout()
+        # ----------------------
+    
+    
+    def layout(self, layout):
+        self.layouting = False
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
         edges = set()
         for edge in self.edges:
@@ -82,49 +108,27 @@ TEST3=TEST3""")
                        or (e.origin == edge.end and e.end == edge.origin)])
                     <= 0):
                 edges.add(edge)
-        np = dl.apply(self, vertices, edges)
+        np = layout.apply(self, vertices, edges)
+        
+        try:
+            self.apply_positions(np[0])
+        except KeyError:
+            self.apply_positions(np)
     
-        self.apply_positions(np)
-
-    def one_step_layout(self, event):
-        self.layouting = False
+    def apply_positions(self, positions):
+        """
+        Move all vertices of positions at their new position.
         
-        osfbl = OneStepForceBasedLayout()
-        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
-        edges = set()
-        for edge in self.edges:
-            # Add edge in edges if no edge in edges already share
-            # the extremities
-            if (len([e for e in edges
-                       if (e.origin == edge.origin and e.end == edge.end)
-                       or (e.origin == edge.end and e.end == edge.origin)])
-                    <= 0):
-                edges.add(edge)
-        np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
+        positions -- a vertex -> x,y position dictionary.
+        """
+        for vertex in positions:
+            vertex.move_to(self, *positions[vertex])
+        for e in self.edges:
+            e.move(self)
+        
+        self.update_scrollregion()
     
-        self.apply_positions(np)
-
-    def layout(self, event):
-        self.layouting = False
-        
-        fbl = ForceBasedLayout()
-        
-        # Compute new positions
-        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
-        edges = set()
-        for edge in self.edges:
-            # Add edge in edges if no edge in edges already share
-            # the extremities
-            if len([e for e in edges
-                     if (e.origin == edge.origin and e.end == edge.end)
-                     or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
-                edges.add(edge)
-        np = fbl.apply(self, vertices, edges, fixed=self.selected)
-        
-        # Move graph
-        self.apply_positions(np)
-    
-    def start_layout(self, event):
+    def interactive_layout(self):
         osfbl = OneStepForceBasedLayout()
         def iter_layout():
             if not self.layouting:
@@ -153,19 +157,6 @@ TEST3=TEST3""")
             self.after(25, iter_layout)
         else:
             self.layouting = False
-    
-    def apply_positions(self, positions):
-        """
-        Move all vertices of positions at their new position.
-        
-        positions -- a vertex -> x,y position dictionary.
-        """
-        for vertex in positions:
-            vertex.move_to(self, *positions[vertex])
-        for e in self.edges:
-            e.move(self)
-        
-        self.update_scrollregion()
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
