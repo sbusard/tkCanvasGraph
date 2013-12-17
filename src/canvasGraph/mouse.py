@@ -217,6 +217,8 @@ class MovingMouse(Mouse):
             return True
 
 
+from .graph import Vertex, Edge
+
 class CreatingMouse(Mouse):
     """
     Add creation behaviours to a canvas.
@@ -252,7 +254,8 @@ class CreatingMouse(Mouse):
         else:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            self.canvas.new_vertex(x, y)
+            v = Vertex()
+            self.canvas.add_vertex(v, (x, y))
             return False
     
     def moved(self, event):
@@ -272,7 +275,11 @@ class CreatingMouse(Mouse):
             
             if (element is not None and element in self.vertices and
                 element != self.starting):
-                self.canvas.new_edge(self.starting, element)
+                if len(list(e for e in self.canvas.edges
+                       if e.origin == self.starting and e.end == element)) <= 0:
+                    # No pre-existing edge, build it
+                    e = Edge(self.starting, element)
+                    self.canvas.add_edge(e)
                 self.starting = None
                 return False
             else:

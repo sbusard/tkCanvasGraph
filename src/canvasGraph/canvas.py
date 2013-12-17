@@ -172,19 +172,6 @@ TEST3=TEST3""")
         else:
             return None
     
-    def new_vertex(self, x, y, label=""):
-        """Add a vertex at (x,y)."""
-        v = Vertex(label)
-        self.add_vertex(v, (x, y))
-    
-    def new_edge(self, orig, end, label=""):
-        """Add an edge from orig to end, if none exists."""
-        if len(list(e for e in self.edges
-                    if e.origin == orig and e.end == end)) <= 0:
-            # No pre-existing edge, build it
-            e = Edge(orig, end, label)
-            self.add_edge(e)
-    
     def add_vertex(self, vertex, position=None):
         """
         Add the given vertex on this canvas at position, if specified.
