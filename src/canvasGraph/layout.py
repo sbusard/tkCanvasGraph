@@ -9,7 +9,7 @@ forceThreshold = 0.001
 
 maxForce = 10
 
-def _distance_vector_from(canvas, vertex, other):
+def _distance_vector_from(canvas, positions, vertex, other):
     """
     Return the distance vector from vertex to the other vertex.
     If vertex is at greater position than other,
@@ -25,10 +25,13 @@ def _distance_vector_from(canvas, vertex, other):
                         |
     """
     
-    xv0, yv0, xv1, yv1 = vertex.bbox(canvas)
-    xvc, yvc = (xv1 + xv0) / 2, (yv1 + yv0) / 2
-    xo0, yo0, xo1, yo1 = other.bbox(canvas)
-    xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
+    xvc, yvc = positions[vertex]
+    vw, vh = vertex.dimensions(canvas)
+    xoc, yoc = positions[other]
+    ow, oh = other.dimensions(canvas)
+    
+    xv0, yv0, xv1, yv1 = (xvc - vw/2, yvc - vh/2, xvc + vw/2, yvc + vh/2)
+    xo0, yo0, xo1, yo1 = (xoc - ow/2, yoc - oh/2, xoc + ow/2, yoc + oh/2)
     
     av = xv1 - xvc      #    +---a-----|
     bv = yv1 - yvc      #    |         |
@@ -60,7 +63,7 @@ def _distance_vector_from(canvas, vertex, other):
     
     return (xvc + dvx, yvc + dvy, xoc + dox, yoc + doy)
 
-def _hooke_attraction(canvas, vertex, other):
+def _hooke_attraction(canvas, positions, vertex, other):
     """
     Return the force produced by the spring between vertex and other, applied
     on vertex.
@@ -69,11 +72,11 @@ def _hooke_attraction(canvas, vertex, other):
     vertex -- a vertex;
     other -- another vertex.
     """
-    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, vertex, other)
+    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, positions, vertex, other)
     
     # Use center to check when vertices overlap
-    vcx, vcy = vertex.center(canvas)
-    ocx, ocy = other.center(canvas)
+    vcx, vcy = positions[vertex]
+    ocx, ocy = positions[other]
     
     # Overlap: when overlapping, ignore the force
     if (ocx - vcx) * (dx1 - dx0) < 0 or (ocy - vcy) * (dy1 - dy0) < 0:
@@ -95,7 +98,7 @@ def _hooke_attraction(canvas, vertex, other):
     
     return fx, fy
 
-def _coulomb_repulsion(canvas, vertex, other):
+def _coulomb_repulsion(canvas, positions, vertex, other):
     """
     Return the electrical force produced by the other vertex on vertex.
     
@@ -103,11 +106,11 @@ def _coulomb_repulsion(canvas, vertex, other):
     vertex -- a vertex;
     other -- another vertex.
     """
-    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, vertex, other)
+    dx0, dy0, dx1, dy1 = _distance_vector_from(canvas, positions, vertex, other)
     
     # Use center to check when vertices overlap
-    vcx, vcy = vertex.center(canvas)
-    ocx, ocy = other.center(canvas)
+    vcx, vcy = positions[vertex]
+    ocx, ocy = positions[other]
     
     # Overlap: when overlapping inverse bounding box
     if (ocx - vcx) * (dx1 - dx0) < 0:
@@ -148,7 +151,7 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
         # Repulsion forces
         for v in positions:
             if vertex != v:
-                cfx, cfy = _coulomb_repulsion(canvas, vertex, v)
+                cfx, cfy = _coulomb_repulsion(canvas, positions, vertex, v)
                 fx += cfx
                 fy += cfy
         
@@ -160,7 +163,7 @@ def force_based_layout_step(canvas, positions, edges, fixed=None):
                 else:
                     other = edge.origin
                 
-                hfx, hfy = _hooke_attraction(canvas, vertex, other)
+                hfx, hfy = _hooke_attraction(canvas, positions, vertex, other)
                 fx += hfx
                 fy += hfy
         
