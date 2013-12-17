@@ -6,7 +6,7 @@ from .observable import ObservableSet
 from .mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
 from .graph import Vertex, Edge
-from .layout import ForceBasedLayout, OneStepForceBasedLayout
+from .layout import ForceBasedLayout, OneStepForceBasedLayout, DotLayout
 
 # Padding for scroll region
 PADDING=10
@@ -43,6 +43,9 @@ class CanvasGraph(tk.Canvas):
         # One step of layout
         self.bind("o", self.one_step_layout)
         
+        # One step of layout
+        self.bind("g", self.dot_layout)
+        
         # Random adding
         def addv(event):
             v = Vertex(str(random.randint(0,100)) +
@@ -64,8 +67,28 @@ TEST3=TEST3""")
                 edge = Edge(o, e)
                 self.add_edge(edge)
         self.bind("k", adde)
+    
+    def dot_layout(self, event):
+        self.layouting = False
+        
+        dl = DotLayout()
+        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
+        edges = set()
+        for edge in self.edges:
+            # Add edge in edges if no edge in edges already share
+            # the extremities
+            if (len([e for e in edges
+                       if (e.origin == edge.origin and e.end == edge.end)
+                       or (e.origin == edge.end and e.end == edge.origin)])
+                    <= 0):
+                edges.add(edge)
+        np = dl.apply(self, vertices, edges)
+    
+        self.apply_positions(np)
 
     def one_step_layout(self, event):
+        self.layouting = False
+        
         osfbl = OneStepForceBasedLayout()
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
         edges = set()

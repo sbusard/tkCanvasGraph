@@ -249,3 +249,61 @@ class ForceBasedLayout(OneStepForceBasedLayout):
             if sf < self.forceThreshold:
                 break
         return np
+
+
+try:
+    import pydot
+except ImportError:
+    pydot = None
+
+class DotLayout:
+    """
+    A layout using fdp (part of graphviz library) to layout the graph.
+    """
+    
+    def apply(self, canvas, vertices, edges):
+        """
+        Call fdp, ignoring positions given in vertices, and return the new
+        positions of vertices of the graph composed of vertices and edges.
+        
+        The ends of all edges must belong to vertices.
+        """
+        
+        if pydot is None:
+            raise ImportError("Cannot use dot layout, pydot is not installed.")
+        
+        # ----- CREATE DOT GRAPH -----
+        # Mark all states
+        ids = {}
+        curid = 0
+        for v in vertices:
+            ids[v] = "s" + str(curid)
+            curid += 1
+                
+        dot = "digraph {"
+        
+        # Add states to the dot representation
+        for v in ids:
+            dot += (ids[v] + " " + "[label=\"" + v.label + "\"]" + ";\n")
+        
+        # For each state, add each transition to the representation
+        for edge in edges:
+            dot += (ids[edge.origin] + "->" + ids[edge.end] + " " +
+                        "[label=\"" + edge.label + "\"]" + ";\n")
+        
+        dot += "}"
+        
+        # dot contains the dot representation of vertices and edges
+        
+        # ----- COMPUTE VERTICES POSITIONS -----
+        graph = pydot.graph_from_dot_data(dot)
+        graph = pydot.graph_from_dot_data(graph.create_dot(prog="fdp"))
+        
+        newPositions = {}
+        for vertex in vertices:
+            pos = graph.get_node(ids[vertex])[0].get("pos")
+            pos = pos[1:-1]
+            pos = pos.split(',')
+            newPositions[vertex] = int(float(pos[0])), int(float(pos[1]))
+        
+        return newPositions
