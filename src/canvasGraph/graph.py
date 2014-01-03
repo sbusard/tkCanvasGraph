@@ -7,7 +7,42 @@ from .exception import UnknownCanvasError
 VERTEXRADIUS=10
 
 
-class Vertex:
+class GraphElement:
+    """
+    An element of a graph.
+    """
+    
+    def handles(self, canvas):
+        """Return the handles in canvas."""
+        handles = []
+        for handlesset in self._handlessets:
+            if canvas in handlesset and handlesset[canvas] is not None:
+                handles.append(handlesset[canvas])
+        return tuple(handles)
+    
+    def bind_on(self, canvas, event, callback, add=None):
+        """
+        Add an event binding to this element on canvas.
+        
+        canvas -- the canvas on which operate;
+        event -- the event specifier;
+        callback -- the function to call when the event occurs.
+                    a function taking one argument: the event;
+        add -- if present and set to "+", the new binding is added to any
+               existing binding.
+        """
+        for handle in self.handles(canvas):
+            canvas.tag_bind(handle, event, callback, add)
+    
+    def unbind_on(self, canvas, event):
+        """
+        Remove all the bindings for event of the element on canvas.
+        """
+        for handle in self.handles(canvas):
+            canvas.tag_unbind(handle, event)
+
+
+class Vertex(GraphElement):
     """
     A vertex of a graph. Owns a label and canvas be drawn on several canvas.
     """
@@ -21,15 +56,7 @@ class Vertex:
         # Keep track of handles and handles of labels in each canvas
         self._handles = {}
         self._labelhandles = {}
-    
-    def handles(self, canvas):
-        """Return the handles in canvas."""
-        handles = []
-        if canvas in self._handles:
-            handles.append(self._handles[canvas])
-        if canvas in self._labelhandles:
-            handles.append(self._labelhandles[canvas])
-        return tuple(handles)
+        self._handlessets = [self._handles, self._labelhandles]
     
     def delete_from(self, canvas):
         """Remove this vertex from canvas, if it is drawn on it."""
@@ -166,7 +193,7 @@ class Vertex:
 
 
 
-class Edge:
+class Edge(GraphElement):
     """
     An edge of a graph. Owns a label and two ends
     and can be drawn on different canvas.
@@ -182,6 +209,8 @@ class Edge:
         self._handles = {}
         self._labelhandles = {}
         self._labelbghandles = {}
+        self._handlessets = [self._handles, self._labelhandles,
+                             self._labelbghandles]
     
     def draw(self, canvas):
         # Draw on canvas and store handle

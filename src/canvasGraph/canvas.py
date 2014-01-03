@@ -17,6 +17,8 @@ class CanvasGraph(tk.Canvas):
     def __init__(self, parent, **config):
         super(CanvasGraph, self).__init__(parent, **config)
         
+        self.event_handled = False
+        
         # Selected vertices
         self.selected = ObservableSet()
         self.selected.register(self)
@@ -282,6 +284,22 @@ TEST3=TEST3""")
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.released(event):
                     break
+    
+    
+    def bind(self, event, func, add=None):
+        def newfunc(event):
+            if self.event_handled:
+                self.event_handled = False
+            else:
+                return func(event)
+        super(CanvasGraph, self).bind(event, newfunc, add)
+        
+    
+    def tag_bind(self, item, event, func, add=None):
+        def newfunc(event):
+            if func(event) == "break":
+                self.event_handled = True
+        super(CanvasGraph, self).tag_bind(item, event, newfunc, add)
 
 
 class CanvasFrame(tk.Frame):
