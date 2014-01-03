@@ -185,9 +185,13 @@ class Edge:
     
     def draw(self, canvas):
         # Draw on canvas and store handle
-        coords = self._edge_coords_from_ends(canvas, 
-                                             self.origin._handles[canvas],
-                                             self.end._handles[canvas])
+        try:
+            coords = self._edge_coords_from_ends(canvas, 
+                                                self.origin._handles[canvas],
+                                                self.end._handles[canvas])
+        except KeyError:
+            raise UnknownCanvasError("Edge ends are not in canvas.")
+        
         handle = canvas.create_line(*coords, arrow="last")
         self._handles[canvas] = handle
         
