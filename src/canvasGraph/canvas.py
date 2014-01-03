@@ -15,7 +15,7 @@ PADDING=10
 class CanvasGraph(tk.Canvas):
     
     def __init__(self, parent, **config):
-        tk.Canvas.__init__(self, parent, **config)
+        super(CanvasGraph, self).__init__(parent, **config)
         
         # Selected vertices
         self.selected = ObservableSet()
@@ -284,84 +284,78 @@ TEST3=TEST3""")
                     break
 
 
+class CanvasFrame(tk.Frame):
+    """
+    A frame containing a canvas graph in which one can display any graph.
+    """
+    
+    def __init__(self, parent, **config):
+        super(CanvasFrame, self).__init__(parent, **config)
+        
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        xscrollbar = tk.Scrollbar(self, orient=tk.HORIZONTAL)
+        xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+        yscrollbar = tk.Scrollbar(self)
+        yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+        self.canvas = CanvasGraph(self, xscrollcommand=xscrollbar.set,
+                                        yscrollcommand=yscrollbar.set)
+
+        self.canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        xscrollbar.config(command=self.canvas.xview)
+        yscrollbar.config(command=self.canvas.yview)
+
+        # Mouses for the canvas
+        sm = SelectingMouse(self.canvas,
+                            selection=self.canvas.selected, 
+                            elements=self.canvas.vertices,
+                            button="1", modifier="")
+        smm = SelectionModifyingMouse(self.canvas,
+                                      selection=self.canvas.selected,
+                                      elements=self.canvas.vertices,
+                                      button="1", modifier="Shift")
+        mm = MovingMouse(self.canvas, self.canvas.selected,
+                         button="1", modifier="")
+    
+    
+    def add_vertices(self, vertices):
+        """
+        Add the given set of vertices to the canvas of this frame.
+        
+        vertices -- a set of vertices.
+        """
+        for vertex in vertices:
+            self.canvas.add_vertex(vertex)
+    
+    
+    def add_edges(self, edges):
+        """
+        Add the given set of edges to the canvas of this frame.
+        
+        edges -- a set of edges.
+        """
+        for edge in edges:
+            self.canvas.add_edge(edge)
+
+
 def show_graph_in_canvas(vertices, edges):
     """
     Create a new window with a canvas and add all given vertices and edges.
     """
     root = tk.Tk()
     
-    frame = tk.Frame(root)
-
-    frame.grid_rowconfigure(0, weight=1)
-    frame.grid_columnconfigure(0, weight=1)
-
-    xscrollbar = tk.Scrollbar(frame, orient=tk.HORIZONTAL)
-    xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
-
-    yscrollbar = tk.Scrollbar(frame)
-    yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
-
-    cg = CanvasGraph(frame, xscrollcommand=xscrollbar.set,
-                            yscrollcommand=yscrollbar.set)
-
-    cg.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-
-    xscrollbar.config(command=cg.xview)
-    yscrollbar.config(command=cg.yview)
+    cframe = CanvasFrame(root)
     
-    frame.pack(fill="both", expand=True)
-    
-    # Mouses for the canvas
-    sm = SelectingMouse(cg, selection=cg.selected, elements=cg.vertices,
-                        button="1", modifier="")
-    smm = SelectionModifyingMouse(cg, selection=cg.selected,
-                                  elements=cg.vertices,
-                                  button="1", modifier="Shift")
-    mm = MovingMouse(cg, cg.selected,
-                     button="1", modifier="")
+    cframe.pack(fill="both", expand=True)
     
     # Add vertices and edges
     for vertex in vertices:
-        cg.add_vertex(vertex)
+        cframe.add_vertex(vertex)
     for edge in edges:
-        cg.add_edge(edge)
-    
-    root.mainloop()
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    
-    frame = tk.Frame(root)
-
-    frame.grid_rowconfigure(0, weight=1)
-    frame.grid_columnconfigure(0, weight=1)
-
-    xscrollbar = tk.Scrollbar(frame, orient=tk.HORIZONTAL)
-    xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
-
-    yscrollbar = tk.Scrollbar(frame)
-    yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
-
-    cg = CanvasGraph(frame, xscrollcommand=xscrollbar.set,
-                            yscrollcommand=yscrollbar.set)
-
-    cg.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-
-    xscrollbar.config(command=cg.xview)
-    yscrollbar.config(command=cg.yview)
-    
-    frame.pack(fill="both", expand=True)
-    
-    # Mouses for the canvas
-    sm = SelectingMouse(cg, selection=cg.selected, elements=cg.vertices,
-                        button="1", modifier="")
-    smm = SelectionModifyingMouse(cg, selection=cg.selected,
-                                  elements=cg.vertices,
-                                  button="1", modifier="Shift")
-    mm = MovingMouse(cg, cg.selected,
-                     button="1", modifier="")
-    cm = CreatingMouse(cg, cg.vertices,
-                       button="1", modifier="Control")
+        cframe.add_edge(edge)
     
     root.mainloop()
