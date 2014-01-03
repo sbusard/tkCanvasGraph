@@ -39,11 +39,12 @@ class CanvasGraph(tk.Canvas):
         menu = tk.Menu(self, tearoff=0)
         
         # Interactive layout
+        osfbl = OneStepForceBasedLayout()
         menu.add_command(label="Interactive layout",
-                         command=lambda : self.interactive_layout(),
+                         command=lambda : self.interactive_layout(osfbl),
                          accelerator="Ctrl+i")
         
-        self.bind("<Control-i>", lambda e: self.interactive_layout())
+        self.bind("<Control-i>", lambda e: self.interactive_layout(osfbl))
         self.layouting = False
         
         # Force-based layout
@@ -130,8 +131,7 @@ TEST3=TEST3""")
         
         self.update_scrollregion()
     
-    def interactive_layout(self):
-        osfbl = OneStepForceBasedLayout()
+    def interactive_layout(self, layout):
         def iter_layout():
             if not self.layouting:
                 return
@@ -147,7 +147,7 @@ TEST3=TEST3""")
                          if (e.origin == edge.origin and e.end == edge.end)
                       or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
                     edges.add(edge)
-            np, sf = osfbl.apply(self, vertices, edges, fixed=self.selected)
+            np, sf = layout.apply(self, vertices, edges, fixed=self.selected)
             
             self.apply_positions(np)
             
