@@ -40,12 +40,16 @@ class CanvasGraph(tk.Canvas):
         
         # Interactive layout
         osfbl = OneStepForceBasedLayout()
-        menu.add_command(label="Interactive layout",
-                         command=lambda : self.interactive_layout(osfbl),
-                         accelerator="Ctrl+i")
+        self.layouting = tk.BooleanVar()
+        self.layouting.set(False)
+        self.layouting.trace("w", lambda *args: self.interactive_layout(osfbl))
+        menu.add_checkbutton(label="Interactive layout",
+                             onvalue=True, offvalue=False, 
+                             variable=self.layouting,
+                             accelerator="Ctrl+i")
         
-        self.bind("<Control-i>", lambda e: self.interactive_layout(osfbl))
-        self.layouting = False
+        self.bind("<Control-i>",
+                  lambda e: self.layouting.set(not self.layouting.get()))
         
         # Force-based layout
         fbl = ForceBasedLayout()
@@ -100,7 +104,7 @@ TEST3=TEST3""")
     
     
     def layout(self, layout):
-        self.layouting = False
+        self.layouting.set(False)
         vertices = {vertex:vertex.center(self) for vertex in self.vertices}
         edges = set()
         for edge in self.edges:
@@ -133,7 +137,7 @@ TEST3=TEST3""")
     
     def interactive_layout(self, layout):
         def iter_layout():
-            if not self.layouting:
+            if not self.layouting.get():
                 return
             
             vertices = {vertex:vertex.center(self)
@@ -151,14 +155,11 @@ TEST3=TEST3""")
             
             self.apply_positions(np)
             
-            if self.layouting:
+            if self.layouting.get():
                 self.after(25, iter_layout)
         
-        if not self.layouting:
-            self.layouting = True
+        if self.layouting.get():
             self.after(25, iter_layout)
-        else:
-            self.layouting = False
     
     def current_element(self):
         """Return the current element if any, None otherwise."""
