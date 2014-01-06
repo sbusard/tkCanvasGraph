@@ -85,6 +85,8 @@ class CanvasGraph(tk.Canvas):
 TEST1=TEST1
 TEST2=TEST2
 TEST3=TEST3""")
+            v.style.common.shape.width = 2
+            v.style.selected.shape.outline = "red"
             self.add_vertex(v)
         self.bind("j", addv)
         def adde(event):
