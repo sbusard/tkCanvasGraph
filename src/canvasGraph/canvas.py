@@ -343,6 +343,15 @@ class CanvasFrame(tk.Frame):
                          button="1", modifier="")
     
     
+    def add_vertex(self, vertex):
+        """
+        Add the given vertex to the canvas of this frame.
+        
+        vertex -- a single vertex.
+        """
+        self.canvas.add_vertex(vertex)
+    
+    
     def add_vertices(self, vertices):
         """
         Add the given set of vertices to the canvas of this frame.
@@ -350,7 +359,17 @@ class CanvasFrame(tk.Frame):
         vertices -- a set of vertices.
         """
         for vertex in vertices:
-            self.canvas.add_vertex(vertex)
+            self.add_vertex(vertex)
+    
+    
+    def add_edge(self, edge):
+        """
+        Add the given edge to the canvas of this frame.
+        
+        
+        edge -- a single edge.
+        """
+        self.canvas.add_edge(edge)
     
     
     def add_edges(self, edges):
@@ -360,7 +379,7 @@ class CanvasFrame(tk.Frame):
         edges -- a set of edges.
         """
         for edge in edges:
-            self.canvas.add_edge(edge)
+            self.add_edge(edge)
 
 
 def show_graph_in_canvas(vertices, edges):
