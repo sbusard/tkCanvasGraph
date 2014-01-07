@@ -203,6 +203,19 @@ TEST3=TEST3""")
         for handle in vertex.handles(self):
             self.elements[handle] = vertex
     
+    def delete_element(self, item):
+        """
+        Delete a given item.
+        """
+        for handle in item.handles(self):
+            self.delete(handle)
+            if handle in self.elements:
+                del self.elements[handle]
+        
+        self.vertices.discard(item)
+        self.edges.discard(item)
+        self.selected.discard(item)
+    
     def add_edge(self, edge):
         """
         Add the given edge on this canvas and draw it.

@@ -113,14 +113,12 @@ class Vertex(GraphElement):
     
     def delete_from(self, canvas):
         """Remove this vertex from canvas, if it is drawn on it."""
+        canvas.delete_element(self)
+        
         if canvas in self._handles:
-            if self._handles[canvas] is not None:
-                canvas.delete(self._handles[canvas])
             del self._handles[canvas]
         if canvas in self._labelhandles:
-            if self._labelhandles[canvas] is not None:
-                canvas.delete(self._labelhandles[canvas])
-            del self._handles[canvas]
+            del self._labelhandles[canvas]
     
     def draw(self, canvas, x, y):
         self.delete_from(canvas)
@@ -344,6 +342,17 @@ class Edge(GraphElement):
         self.style.common.textbg = AttrDict()
         self.style.common.textbg.fill = "white"
         self.style.common.textbg.outline = "white"
+    
+    def delete_from(self, canvas):
+        """Remove this edge from canvas, if it is drawn on it."""
+        canvas.delete_element(self)
+        
+        if canvas in self._handles:
+            del self._handles[canvas]
+        if canvas in self._labelhandles:
+            del self._labelhandles[canvas]
+        if canvas in self._labelbghandles:
+            del self._labelbghandles[canvas]
     
     def draw(self, canvas):
         # Draw on canvas and store handle
