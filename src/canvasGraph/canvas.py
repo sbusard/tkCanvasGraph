@@ -333,12 +333,17 @@ class CanvasFrame(tk.Frame):
         self.canvas.bind("<Control-l>", lambda e: self.canvas.layout(fbl))
         
         # Dot layout
-        dl = DotLayout()
-        menu.add_command(label="Dot layout",
-                         command=lambda : self.canvas.layout(dl),
-                         accelerator="Ctrl+d")
-        
-        self.canvas.bind("<Control-d>", lambda e: self.canvas.layout(dl))
+        try:
+            import pydot
+            
+            dl = DotLayout()
+            menu.add_command(label="Dot layout",
+                             command=lambda : self.canvas.layout(dl),
+                             accelerator="Ctrl+d")
+            
+            self.canvas.bind("<Control-d>", lambda e: self.canvas.layout(dl))
+        except ImportError:
+            pass
 
         def popup(event):
             menu.post(event.x_root, event.y_root)
