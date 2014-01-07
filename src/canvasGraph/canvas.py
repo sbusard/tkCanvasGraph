@@ -289,26 +289,26 @@ class CanvasFrame(tk.Frame):
     def __init__(self, parent, **config):
         super(CanvasFrame, self).__init__(parent, **config)
         
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         xscrollbar = tk.Scrollbar(self, orient=tk.HORIZONTAL)
-        xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+        xscrollbar.grid(row=2, column=0, sticky=tk.E+tk.W)
 
         yscrollbar = tk.Scrollbar(self)
-        yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+        yscrollbar.grid(row=1, column=1, sticky=tk.N+tk.S)
 
         self.canvas = CanvasGraph(self, xscrollcommand=xscrollbar.set,
                                         yscrollcommand=yscrollbar.set)
 
-        self.canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.canvas.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
 
         xscrollbar.config(command=self.canvas.xview)
         yscrollbar.config(command=self.canvas.yview)
         
-        
-        # Popup menu for layouts
-        menu = tk.Menu(self, tearoff=0)
+        # Toolbar
+        frame = tk.Frame(self)
+        frame.grid(row=0, sticky=tk.W+tk.E)
         
         # Interactive layout
         osfbl = OneStepForceBasedLayout()
@@ -316,39 +316,41 @@ class CanvasFrame(tk.Frame):
         self.canvas.layouting.set(False)
         self.canvas.layouting.trace("w",
                             lambda *args: self.canvas.interactive_layout(osfbl))
-        menu.add_checkbutton(label="Interactive layout",
-                             onvalue=True, offvalue=False, 
-                             variable=self.canvas.layouting,
-                             accelerator="Ctrl+i")
+        ilbutton = tk.Checkbutton(frame,
+                                  text="Interactive layout",
+                                  onvalue=True, offvalue=False,
+                                  variable=self.canvas.layouting)
+        ilbutton.grid(row=0, sticky=tk.W)
         
         self.canvas.bind("<Control-i>",
            lambda e: self.canvas.layouting.set(not self.canvas.layouting.get()))
         
+        
         # Force-based layout
         fbl = ForceBasedLayout()
-        menu.add_command(label="Force-based layout",
-                         command=lambda : self.canvas.layout(fbl),
-                         accelerator="Ctrl+l")
+        fblbutton = tk.Button(frame,
+                              text="Force-based layout",
+                              command=lambda : self.canvas.layout(fbl))
+        fblbutton.config()
+        fblbutton.grid(row=0, column=1, sticky=tk.W)
         
         self.canvas.bind("<Control-l>", lambda e: self.canvas.layout(fbl))
+        
         
         # Dot layout
         try:
             import pydot
             
             dl = DotLayout()
-            menu.add_command(label="Dot layout",
-                             command=lambda : self.canvas.layout(dl),
-                             accelerator="Ctrl+d")
+            dlbutton = tk.Button(frame,
+                                 text="Dot layout",
+                                 command=lambda : self.canvas.layout(dl))
+            dlbutton.grid(row=0, column=2, sticky=tk.W)
             
             self.canvas.bind("<Control-d>", lambda e: self.canvas.layout(dl))
         except ImportError:
             pass
-
-        def popup(event):
-            menu.post(event.x_root, event.y_root)
-
-        self.canvas.bind("<Button-2>", popup)
+        
 
         # Mouses for the canvas
         sm = SelectingMouse(self.canvas,
