@@ -36,43 +36,6 @@ class CanvasGraph(tk.Canvas):
         self.focus_set()
         
         
-        menu = tk.Menu(self, tearoff=0)
-        
-        # Interactive layout
-        osfbl = OneStepForceBasedLayout()
-        self.layouting = tk.BooleanVar()
-        self.layouting.set(False)
-        self.layouting.trace("w", lambda *args: self.interactive_layout(osfbl))
-        menu.add_checkbutton(label="Interactive layout",
-                             onvalue=True, offvalue=False, 
-                             variable=self.layouting,
-                             accelerator="Ctrl+i")
-        
-        self.bind("<Control-i>",
-                  lambda e: self.layouting.set(not self.layouting.get()))
-        
-        # Force-based layout
-        fbl = ForceBasedLayout()
-        menu.add_command(label="Force-based layout",
-                         command=lambda : self.layout(fbl),
-                         accelerator="Ctrl+l")
-        
-        self.bind("<Control-l>", lambda e: self.layout(fbl))
-        
-        # Dot layout
-        dl = DotLayout()
-        menu.add_command(label="Dot layout",
-                         command=lambda : self.layout(dl),
-                         accelerator="Ctrl+d")
-        
-        self.bind("<Control-d>", lambda e: self.layout(dl))
-
-        def popup(event):
-            menu.post(event.x_root, event.y_root)
-
-        self.bind("<Button-2>", popup)
-        
-        
         # TODO REMOVE THIS -----
         
         # One step of force-based layout
@@ -342,6 +305,45 @@ class CanvasFrame(tk.Frame):
 
         xscrollbar.config(command=self.canvas.xview)
         yscrollbar.config(command=self.canvas.yview)
+        
+        
+        # Popup menu for layouts
+        menu = tk.Menu(self, tearoff=0)
+        
+        # Interactive layout
+        osfbl = OneStepForceBasedLayout()
+        self.canvas.layouting = tk.BooleanVar()
+        self.canvas.layouting.set(False)
+        self.canvas.layouting.trace("w",
+                            lambda *args: self.canvas.interactive_layout(osfbl))
+        menu.add_checkbutton(label="Interactive layout",
+                             onvalue=True, offvalue=False, 
+                             variable=self.canvas.layouting,
+                             accelerator="Ctrl+i")
+        
+        self.canvas.bind("<Control-i>",
+           lambda e: self.canvas.layouting.set(not self.canvas.layouting.get()))
+        
+        # Force-based layout
+        fbl = ForceBasedLayout()
+        menu.add_command(label="Force-based layout",
+                         command=lambda : self.canvas.layout(fbl),
+                         accelerator="Ctrl+l")
+        
+        self.canvas.bind("<Control-l>", lambda e: self.canvas.layout(fbl))
+        
+        # Dot layout
+        dl = DotLayout()
+        menu.add_command(label="Dot layout",
+                         command=lambda : self.canvas.layout(dl),
+                         accelerator="Ctrl+d")
+        
+        self.canvas.bind("<Control-d>", lambda e: self.canvas.layout(dl))
+
+        def popup(event):
+            menu.post(event.x_root, event.y_root)
+
+        self.canvas.bind("<Button-2>", popup)
 
         # Mouses for the canvas
         sm = SelectingMouse(self.canvas,
