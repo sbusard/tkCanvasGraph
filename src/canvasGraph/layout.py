@@ -30,7 +30,7 @@ class OneStepForceBasedLayout(Layout):
         self.maxForce = 10
 
 
-    def _distance_vector_from(self, canvas, positions, vertex, other):
+    def _distance_vector_from(self, positions, vertex, other):
         """
         Return the distance vector from vertex to the other vertex.
         If vertex is at greater position than other,
@@ -47,9 +47,9 @@ class OneStepForceBasedLayout(Layout):
         """
     
         xvc, yvc = positions[vertex]
-        vw, vh = vertex.dimensions(canvas)
+        vw, vh = vertex.dimensions()
         xoc, yoc = positions[other]
-        ow, oh = other.dimensions(canvas)
+        ow, oh = other.dimensions()
     
         xv0, yv0, xv1, yv1 = (xvc - vw/2, yvc - vh/2, xvc + vw/2, yvc + vh/2)
         xo0, yo0, xo1, yo1 = (xoc - ow/2, yoc - oh/2, xoc + ow/2, yoc + oh/2)
@@ -84,18 +84,17 @@ class OneStepForceBasedLayout(Layout):
     
         return (xvc + dvx, yvc + dvy, xoc + dox, yoc + doy)
 
-    def _hooke_attraction(self, canvas, positions, vertex, other):
+    def _hooke_attraction(self, positions, vertex, other):
         """
         Return the force produced by the spring between vertex and other,
         applied on vertex.
-    
-        canvas -- the canvas of interest;
+        
         positions -- the positions of the vertices
                      (a vertex -> x,y position dictionary);
         vertex -- a vertex;
         other -- another vertex.
         """
-        dx0, dy0, dx1, dy1 = self._distance_vector_from(canvas, positions,
+        dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
     
         # Use center to check when vertices overlap
@@ -122,17 +121,16 @@ class OneStepForceBasedLayout(Layout):
     
         return fx, fy
 
-    def _coulomb_repulsion(self, canvas, positions, vertex, other):
+    def _coulomb_repulsion(self, positions, vertex, other):
         """
         Return the electrical force produced by the other vertex on vertex.
-    
-        canvas -- the canvas of interest;
+        
         positions -- the positions of the vertices
                      (a vertex -> x,y position dictionary);
         vertex -- a vertex;
         other -- another vertex.
         """
-        dx0, dy0, dx1, dy1 = self._distance_vector_from(canvas, positions,
+        dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
     
         # Use center to check when vertices overlap
@@ -156,13 +154,12 @@ class OneStepForceBasedLayout(Layout):
     
         return fx, fy
 
-    def apply(self, canvas, positions, edges, fixed=None):
+    def apply(self, positions, edges, fixed=None):
         """
-        Return the new positions of vertices in positions on canvas,
+        Return the new positions of vertices in positions,
         given edges between them.
         If fixed is not None, only vertices out of fixed are moved.
-    
-        canvas -- the canvas on which operate;
+        
         positions -- a dictionary of vertex -> x,y coordinates values;
         edges -- a set of edges between vertices of positions;
         fixed -- a set of vertices.
@@ -178,7 +175,7 @@ class OneStepForceBasedLayout(Layout):
             # Repulsion forces
             for v in positions:
                 if vertex != v:
-                    cfx, cfy = self._coulomb_repulsion(canvas, positions,
+                    cfx, cfy = self._coulomb_repulsion(positions,
                                                        vertex, v)
                     fx += cfx
                     fy += cfy
@@ -191,7 +188,7 @@ class OneStepForceBasedLayout(Layout):
                     else:
                         other = edge.origin
                 
-                    hfx, hfy = self._hooke_attraction(canvas, positions,
+                    hfx, hfy = self._hooke_attraction(positions,
                                                       vertex, other)
                     fx += hfx
                     fy += hfy
@@ -228,15 +225,14 @@ class ForceBasedLayout(OneStepForceBasedLayout):
         self.iterationNumber = 1000
         self.forceThreshold = 0.001
     
-    def apply(self, canvas, vertices, edges, fixed=None):
+    def apply(self, vertices, edges, fixed=None):
         """
-        Return the new positions of vertices on canvas,
+        Return the new positions of vertices,
         given their initial positions and their connected edges.
         Return a dictionary of vertices -> positions pairs, with new positions 
         of the vertices.
         If fixed is not None, only vertices out of fixed are moved.
-    
-        canvas   -- the canvas on which operate;
+        
         vertices -- a dictionary of vertices -> position pairs, where positions
                     are couples of x,y coordinates
         edges    -- a set of couples (v1, v2)
@@ -245,7 +241,7 @@ class ForceBasedLayout(OneStepForceBasedLayout):
         """
         np = vertices
         for i in range(self.iterationNumber):
-            np, sf = super().apply(canvas, np, edges, fixed=fixed)
+            np, sf = super().apply(np, edges, fixed=fixed)
             if sf < self.forceThreshold:
                 break
         return np
@@ -261,7 +257,7 @@ class DotLayout:
     A layout using fdp (part of graphviz library) to layout the graph.
     """
     
-    def apply(self, canvas, vertices, edges):
+    def apply(self, vertices, edges):
         """
         Call fdp, ignoring positions given in vertices, and return the new
         positions of vertices of the graph composed of vertices and edges.

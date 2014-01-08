@@ -254,8 +254,7 @@ class CreatingMouse(Mouse):
         else:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            v = Vertex()
-            self.canvas.add_vertex(v, (x, y))
+            v = Vertex(self.canvas, position=(x, y))
             return False
     
     def moved(self, event):
@@ -278,8 +277,7 @@ class CreatingMouse(Mouse):
                 if len(list(e for e in self.canvas.edges
                        if e.origin == self.starting and e.end == element)) <= 0:
                     # No pre-existing edge, build it
-                    e = Edge(self.starting, element)
-                    self.canvas.add_edge(e)
+                    e = Edge(self.canvas, self.starting, element)
                 self.starting = None
                 return False
             else:

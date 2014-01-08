@@ -1,8 +1,6 @@
 import math
 import tkinter as tk
 
-from .exception import UnknownCanvasError
-
 # Radius of circles representing vertices
 VERTEXRADIUS=10
 
@@ -29,39 +27,34 @@ class GraphElement:
     An element of a graph.
     """
     
-    def handles(self, canvas):
-        """Return the handles in canvas."""
-        handles = []
-        for handlesset in self._handlessets:
-            if canvas in handlesset and handlesset[canvas] is not None:
-                handles.append(handlesset[canvas])
-        return tuple(handles)
+    def handles(self):
+        """Return the handles of this element."""
+        raise NotImplementedError("Should be implemented by subclasses.")
     
-    def bind_on(self, canvas, event, callback, add=None):
+    def bind(self, event, callback, add=None):
         """
         Add an event binding to this element on canvas.
         
-        canvas -- the canvas on which operate;
         event -- the event specifier;
         callback -- the function to call when the event occurs.
                     a function taking one argument: the event;
         add -- if present and set to "+", the new binding is added to any
                existing binding.
         """
-        for handle in self.handles(canvas):
+        for handle in self.handles():
             canvas.tag_bind(handle, event, callback, add)
     
-    def unbind_on(self, canvas, event):
+    def unbind(self, event):
         """
         Remove all the bindings for event of the element on canvas.
         """
-        for handle in self.handles(canvas):
+        for handle in self.handles():
             canvas.tag_unbind(handle, event)
 
 
 class Vertex(GraphElement):
     """
-    A vertex of a graph. Owns a label and canvas be drawn on several canvas.
+    A vertex of a graph. Owns a label and canvas.
     
     The style of the vertex can be changed at any time by updating vertex.style
     dictionary:
@@ -83,17 +76,17 @@ class Vertex(GraphElement):
     selecting the vertex, but will not change back when deselecting it.
     """
     
-    def __init__(self, label=""):
+    def __init__(self, canvas, label="", position=None):
         """
-        Create a vertex with label.
+        Create a vertex with label on canvas.
         """
+        self._canvas = canvas
         self._label = label
         self._selected = False
         
-        # Keep track of handles and handles of labels in each canvas
-        self._handles = {}
-        self._labelhandles = {}
-        self._handlessets = [self._handles, self._labelhandles]
+        # Keep track of handle and handle of labels in canvas
+        self._handle = None
+        self._labelhandle = None
         
         # Styles
         self.style = AttrDict()
@@ -110,18 +103,26 @@ class Vertex(GraphElement):
         self.style.selected.shape = AttrDict()
         self.style.selected.shape.fill = "yellow"
         self.style.selected.text = AttrDict()
-    
-    def delete_from(self, canvas):
-        """Remove this vertex from canvas, if it is drawn on it."""
-        canvas.delete_element(self)
         
-        if canvas in self._handles:
-            del self._handles[canvas]
-        if canvas in self._labelhandles:
-            del self._labelhandles[canvas]
+        self._canvas.add_vertex(self, position)
     
-    def draw(self, canvas, x, y):
-        self.delete_from(canvas)
+    def handles(self):
+        handles = []
+        if self._handle is not None:
+            handles.append(self._handle)
+        if self._labelhandle is not None:
+            handles.append(self._labelhandle)
+        return tuple(handles)
+    
+    def delete(self):
+        """Remove this vertex from canvas."""
+        self._canvas.delete_element(self)
+        self._handle = None
+        self._labelhandle = None
+    
+    def draw(self, x, y):
+        self.delete()
+        canvas = self._canvas
         
         # When drawing, only apply common style
         self._selected = False
@@ -130,58 +131,53 @@ class Vertex(GraphElement):
         
         # Add label on canvas and store handle
         if self.label != "":
-            self._labelhandles[canvas] = canvas.create_text(x, y,
-                                                            text=self.label,
-                                                            **textstyle)
-            x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandles[canvas])
+            self._labelhandle = canvas.create_text(x, y,
+                                                   text=self.label,
+                                                   **textstyle)
+            x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandle)
             
             # Draw on canvas and store handle
             x0e = x - (x1l-x0l)/2 * math.sqrt(2)
             y0e = y - (y1l-y0l)/2 * math.sqrt(2)
             x1e = x + (x1l-x0l)/2 * math.sqrt(2)
             y1e = y + (y1l-y0l)/2 * math.sqrt(2)
-            self._handles[canvas] = canvas.create_oval((x0e, y0e, x1e, y1e),
-                                                       **shapestyle)
-            canvas.tag_raise(self._labelhandles[canvas])
+            self._handle = canvas.create_oval((x0e, y0e, x1e, y1e),
+                                              **shapestyle)
+            canvas.tag_raise(self._labelhandle)
         
         else:
-            self._labelhandles[canvas] = None
-            self._handles[canvas] = canvas.create_oval((x - VERTEXRADIUS,
-                                                        y - VERTEXRADIUS,
-                                                        x + VERTEXRADIUS,
-                                                        y + VERTEXRADIUS),
-                                                       **shapestyle)
+            self._labelhandle = None
+            self._handle = canvas.create_oval((x - VERTEXRADIUS,
+                                               y - VERTEXRADIUS,
+                                               x + VERTEXRADIUS,
+                                               y + VERTEXRADIUS),
+                                              **shapestyle)
     
-    def move(self, canvas, dx, dy):
+    def move(self, dx, dy):
         """
         Move this vertex on canvas.
         
         dx -- the difference to move on x axis;
         dy -- the difference to move on y axis.
         """
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot move.".format(canvas))
-        canvas.move(self._handles[canvas], dx, dy)
-        if (canvas in self._labelhandles
-            and self._labelhandles[canvas] is not None):
-            canvas.move(self._labelhandles[canvas], dx, dy)
+        canvas = self._canvas
+        canvas.move(self._handle, dx, dy)
+        if self._labelhandle is not None:
+            canvas.move(self._labelhandle, dx, dy)
     
-    def move_to(self, canvas, x, y):
+    def move_to(self, x, y):
         """
         Move this vertex to x,y on canvas
         and return the corresponding dx,dy.
         """
-        curx, cury = self.center(canvas)
+        curx, cury = self.center()
         dx = x - curx
         dy = y - cury
-        self.move(canvas, dx, dy)
+        self.move(dx, dy)
         return (dx, dy)
     
-    def select(self, canvas):
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot select vertex.".format(canvas))
+    def select(self):
+        canvas = self._canvas
         
         # Get style
         shapestyle = self.style.common.shape.copy()
@@ -189,45 +185,35 @@ class Vertex(GraphElement):
         textstyle = self.style.common.text.copy()
         override(textstyle, self.style.selected.text)
             
-        canvas.itemconfig(self._handles[canvas], **shapestyle)
-        if (canvas is self._labelhandles and
-            self._labelhandles[canvas] is not None):
-            canvas.itemconfig(self._labelhandles[canvas], **textstyle)
+        canvas.itemconfig(self._handle, **shapestyle)
+        if self._labelhandle is not None:
+            canvas.itemconfig(self._labelhandle, **textstyle)
         
         self._selected = True
     
-    def deselect(self, canvas):
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot deselect vertex.".format(canvas))
+    def deselect(self):
+        canvas = self._canvas
         
         # Get style
         shapestyle = self.style.common.shape
         textstyle = self.style.common.text
             
-        canvas.itemconfig(self._handles[canvas], **shapestyle)
-        if (canvas is self._labelhandles and
-            self._labelhandles[canvas] is not None):
-            canvas.itemconfig(self._labelhandles[canvas], **textstyle)
+        canvas.itemconfig(self._handle, **shapestyle)
+        if self._labelhandle is not None:
+            canvas.itemconfig(self._labelhandle, **textstyle)
         
         self._selected = False
     
-    def center(self, canvas):
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot find center.".format(canvas))
-        x0, y0, x1, y1 = canvas.coords(self._handles[canvas])
+    def center(self):
+        x0, y0, x1, y1 = self._canvas.coords(self._handle)
         return ((x0 + x1) / 2, (y0 + y1) / 2)
     
-    def bbox(self, canvas):
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot find bounding box.".format(canvas))
-        return canvas.bbox(self._handles[canvas])
+    def bbox(self):
+        return self._canvas.bbox(self._handle)
     
-    def dimensions(self, canvas):
+    def dimensions(self):
         """Return this vertex width and height."""
-        x0, y0, x1, y1 = self.bbox(canvas)
+        x0, y0, x1, y1 = self.bbox()
         return x1-x0, y1-y0
     
     @property
@@ -245,44 +231,42 @@ class Vertex(GraphElement):
             override(shapestyle, self.style.selected.shape)
             override(textstyle, self.style.selected.text)
         
-        for canvas in self._handles:
-            x, y = self.center(canvas)
+        canvas = self._canvas
+        x, y = self.center(canvas)
         
-            if self._label != "":
-                if self._labelhandles[canvas] == None:
-                    self._labelhandles[canvas] = canvas.create_text(x, y,
-                                                               text=self._label,
-                                                               **textstyle)
-                else:
-                    canvas.itemconfig(self._labelhandles[canvas],
-                                      text=self._label)
-            
-                x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandles[canvas])
-            
-                # Draw on canvas and store handle
-                x0e = x - (x1l-x0l)/2 * math.sqrt(2)
-                y0e = y - (y1l-y0l)/2 * math.sqrt(2)
-                x1e = x + (x1l-x0l)/2 * math.sqrt(2)
-                y1e = y + (y1l-y0l)/2 * math.sqrt(2)
-                canvas.coords(self._handles[canvas], (x0e, y0e, x1e, y1e))
-        
+        if self._label != "":
+            if self._labelhandle == None:
+                self._labelhandle = canvas.create_text(x, y,
+                                                       text=self._label,
+                                                       **textstyle)
             else:
-                if self._labelhandles[canvas] != None:
-                    canvas.delete(self._labelhandles[canvas])
-                canvas.coords(self._handles[canvas], (x - VERTEXRADIUS,
-                                                      y - VERTEXRADIUS,
-                                                      x + VERTEXRADIUS,
-                                                      y + VERTEXRADIUS))
+                canvas.itemconfig(self._labelhandle,
+                                  text=self._label)
         
-            canvas.update_vertex(self)
+            x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandle)
+        
+            # Draw on canvas and store handle
+            x0e = x - (x1l-x0l)/2 * math.sqrt(2)
+            y0e = y - (y1l-y0l)/2 * math.sqrt(2)
+            x1e = x + (x1l-x0l)/2 * math.sqrt(2)
+            y1e = y + (y1l-y0l)/2 * math.sqrt(2)
+            canvas.coords(self._handle, (x0e, y0e, x1e, y1e))
+        
+        else:
+            if self._labelhandle != None:
+                canvas.delete(self._labelhandle)
+            canvas.coords(self._handle, (x - VERTEXRADIUS,
+                                         y - VERTEXRADIUS,
+                                         x + VERTEXRADIUS,
+                                         y + VERTEXRADIUS))
+        
+        canvas.update_vertex(self)
     
-    def refresh(self, canvas):
+    def refresh(self):
         """
         Refresh the appearance of this vertex on canvas.
         """
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot refresh vertex.".format(canvas))
+        canvas = self._canvas
         # Get style
         shapestyle = self.style.common.shape.copy()
         textstyle = self.style.common.text.copy()
@@ -290,17 +274,15 @@ class Vertex(GraphElement):
             override(shapestyle, self.style.selected.shape)
             override(textstyle, self.style.selected.text)
         
-        canvas.itemconfig(self._handles[canvas], **shapestyle)
-        if (canvas in self._labelhandles and
-            self._labelhandles[canvas] is not None):
-            canvas.itemconfig(self._labelhandles[canvas], **textstyle)
+        canvas.itemconfig(self._handle, **shapestyle)
+        if self._labelhandle is not None:
+            canvas.itemconfig(self._labelhandle, **textstyle)
 
 
 
 class Edge(GraphElement):
     """
-    An edge of a graph. Owns a label and two ends
-    and can be drawn on different canvas.
+    An edge of a graph. Owns a label and two ends.
     
     The style of the edge can be changed at any time by updating edge.style
     dictionary:
@@ -317,18 +299,17 @@ class Edge(GraphElement):
         style.common.shape.fill = "red"
     """
     
-    def __init__(self, origin, end, label=""):
+    def __init__(self, canvas, origin, end, label=""):
         """
         Create an edge between origin and end.
         """
+        self._canvas = canvas
         self.origin = origin
         self.end = end
         self._label = label
-        self._handles = {}
-        self._labelhandles = {}
-        self._labelbghandles = {}
-        self._handlessets = [self._handles, self._labelhandles,
-                             self._labelbghandles]
+        self._handle = None
+        self._labelhandle = None
+        self._labelbghandle = None
         
         # Styles
         self.style = AttrDict()
@@ -342,29 +323,34 @@ class Edge(GraphElement):
         self.style.common.textbg = AttrDict()
         self.style.common.textbg.fill = "white"
         self.style.common.textbg.outline = "white"
-    
-    def delete_from(self, canvas):
-        """Remove this edge from canvas, if it is drawn on it."""
-        canvas.delete_element(self)
         
-        if canvas in self._handles:
-            del self._handles[canvas]
-        if canvas in self._labelhandles:
-            del self._labelhandles[canvas]
-        if canvas in self._labelbghandles:
-            del self._labelbghandles[canvas]
+        self._canvas.add_edge(self)
     
-    def draw(self, canvas):
+    def handles(self):
+        handles = []
+        if self._handle is not None:
+            handles.append(self._handle)
+        if self._labelhandle is not None:
+            handles.append(self._labelhandle)
+        if self._labelbghandle is not None:
+            handles.append(self._labelbghandle)
+        return tuple(handles)
+    
+    def delete(self):
+        """Remove this edge from canvas."""
+        self._canvas.delete_element(self)
+        self._handle = None
+        self._labelhandle = None
+        self._labelbghandle = None
+    
+    def draw(self):
         # Draw on canvas and store handle
-        try:
-            coords = self._edge_coords_from_ends(canvas, 
-                                                self.origin._handles[canvas],
-                                                self.end._handles[canvas])
-        except KeyError:
-            raise UnknownCanvasError("Edge ends are not in canvas.")
+        canvas = self._canvas
+        coords = self._edge_coords_from_ends(self.origin._handle,
+                                             self.end._handle)
         
         handle = canvas.create_line(*coords, **self.style.common.shape)
-        self._handles[canvas] = handle
+        self._handle = handle
         
         # Add label on canvas and store handle
         if self.label != "":
@@ -372,18 +358,18 @@ class Edge(GraphElement):
             x, y = ((x0 + x1) / 2, (y0 + y1) / 2)
             labelhandle = canvas.create_text(x, y, text=self.label,
                                              **self.style.common.text)
-            self._labelhandles[canvas] = labelhandle
-            self._labelbghandles[canvas] = canvas.create_rectangle(
-                                    *canvas.bbox(labelhandle),
-                                    **self.style.common.textbg)
+            self._labelhandle = labelhandle
+            self._labelbghandle = canvas.create_rectangle(
+                                                      *canvas.bbox(labelhandle),
+                                                     **self.style.common.textbg)
             canvas.tag_raise(labelhandle)
         else:
-            self._labelhandles[canvas] = self._labelbghandles[canvas] = None
+            self._labelhandle = self._labelbghandle = None
     
-    def _edge_coords_from_ends(self, canvas, orig, end):
-        xo0, yo0, xo1, yo1 = canvas.coords(orig)
+    def _edge_coords_from_ends(self, orig, end):
+        xo0, yo0, xo1, yo1 = self._canvas.coords(orig)
         xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
-        xe0, ye0, xe1, ye1 = canvas.coords(end)
+        xe0, ye0, xe1, ye1 = self._canvas.coords(end)
         xec, yec = (xe1 + xe0) / 2, (ye1 + ye0) / 2
         
         ao = xo1 - xoc
@@ -409,10 +395,9 @@ class Edge(GraphElement):
                 xec - dex if xec >= xoc else xec + dex,
                 yec - dey if xec > xoc else yec + dey)
     
-    def length(self, canvas):
-        x0, y0, x1, y1 = self._edge_coords_from_ends(canvas,
-                                                     self.origin.handle,
-                                                     self.end.handle)
+    def length(self):
+        x0, y0, x1, y1 = self._edge_coords_from_ends(self.origin._handle,
+                                                     self.end._handle)
         dx = x1 - x0
         dy = y1 - y0
         return math.sqrt(dx*dx + dy*dy)
@@ -424,67 +409,56 @@ class Edge(GraphElement):
     @label.setter
     def label(self, value):
         self._label = value
+        canvas = self._canvas
         
-        for canvas in self._handles:
-        
-            if (canvas in self._labelhandles
-                and self._labelhandles[canvas] is None):
-                if self._label != "":
-                    x0, y0, x1, y1 = canvas.coords(self._handles[canvas])
-                    x, y = ((x0 + x1) / 2, (y0 + y1) / 2)
-                    self._labelhandles[canvas] = canvas.create_text(x, y,
-                                                              text=self._label,
+        if self._labelhandle is None:
+            if self._label != "":
+                x0, y0, x1, y1 = canvas.coords(self._handle)
+                x, y = ((x0 + x1) / 2, (y0 + y1) / 2)
+                self._labelhandle = canvas.create_text(x, y,
+                                                       text=self._label,
                                                        **self.style.common.text)
-                    self._labelbghandles[canvas] = self.canvas.create_rectangle(
-                                    *canvas.bbox(self._labelhandles[canvas]),
-                                    **self.style.common.textbg)
-                    canvas.tag_raise(self._labelhandles[canvas])
+                self._labelbghandle = canvas.create_rectangle(
+                                                *canvas.bbox(self._labelhandle),
+                                                **self.style.common.textbg)
+                canvas.tag_raise(self._labelhandle)
+        else:
+            if self._label == "":
+                canvas.delete(self._labelhandle)
+                canvas.delete(self._labelbghandle)
+                self._labelhandle = None
+                self._labelbghandle = None
             else:
-                if self._label == "":
-                    canvas.delete(self._labelhandles[canvas])
-                    canvas.delete(self._labelbghandles[canvas])
-                    del self._labelhandles[canvas]
-                    del self._labelbghandles[canvas]
-                else:
-                    self.canvas.itemconfig(self._labelhandles[canvas],
-                                           text=self._label)
-                    self.canvas.coords(self._labelbghandles[canvas],
-                                       *canvas.bbox(self._labelhandles[canvas]))
+                canvas.itemconfig(self._labelhandle,
+                                  text=self._label)
+                canvas.coords(self._labelbghandle,
+                              *canvas.bbox(self._labelhandle))
     
-    def move(self, canvas):
+    def move(self):
         """
         Move this edge on canvas to fit its ends.
         """
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot move edge.".format(canvas))
+        canvas = self._canvas
         
-        canvas.coords(self._handles[canvas],
-                      self._edge_coords_from_ends(canvas,
-                                                  self.origin._handles[canvas],
-                                                  self.end._handles[canvas]))
-        if (canvas in self._labelhandles
-            and self._labelhandles[canvas] is not None):
-            x0, y0, x1, y1 = canvas.coords(self._handles[canvas])
+        canvas.coords(self._handle,
+                      self._edge_coords_from_ends(self.origin._handle,
+                                                  self.end._handle))
+        if self._labelhandle is not None:
+            x0, y0, x1, y1 = canvas.coords(self._handle)
             x, y = ((x0 + x1) / 2, (y0 + y1) / 2)
-            canvas.coords(self._labelhandles[canvas], x, y)
-            canvas.coords(self._labelbghandles[canvas],
-                               *canvas.bbox(self._labelhandles[canvas]))
+            canvas.coords(self._labelhandle, x, y)
+            canvas.coords(self._labelbghandle,
+                          *canvas.bbox(self._labelhandle))
     
-    def refresh(self, canvas):
+    def refresh(self):
         """
         Refresh the appearance of this edge on canvas.
         """
-        if canvas not in self._handles:
-            raise UnknownCanvasError("Unknown canvas ({}), "
-                                     "cannot refresh edge.".format(canvas))
-        
-        canvas.itemconfig(self._handles[canvas], **self.style.common.shape)
-        if (canvas in self._labelhandles and
-            self._labelhandles[canvas] is not None):
-            canvas.itemconfig(self._labelhandles[canvas],
+        canvas = self._canvas
+        canvas.itemconfig(self._handle, **self.style.common.shape)
+        if self._labelhandle is not None:
+            canvas.itemconfig(self._labelhandle,
                               **self.style.common.text)
-            if (canvas in self._labelbghandles and
-                self._labelbghandles[canvas] is not None):
-                canvas.itemconfig(self._labelbghandles[canvas],
+            if self._labelbghandle is not None:
+                canvas.itemconfig(self._labelbghandle,
                                   **self.style.common.textbg)

@@ -43,14 +43,14 @@ class CanvasGraph(tk.Canvas):
         
         # Random adding
         def addv(event):
-            v = Vertex(str(random.randint(0,100)) +
+            v = Vertex(self, str(random.randint(0,100)) +
 """
 TEST1=TEST1
 TEST2=TEST2
 TEST3=TEST3""")
             v.style.common.shape.width = 2
             v.style.selected.shape.outline = "red"
-            self.add_vertex(v)
+            v.refresh()
         self.bind("j", addv)
         def adde(event):
             pairs = [(o, e) for o in self.vertices
@@ -61,8 +61,7 @@ TEST3=TEST3""")
                                             and edge.end == e]) <= 0]
             if len(pairs) > 0:
                 o, e = random.choice(pairs)
-                edge = Edge(o, e)
-                self.add_edge(edge)
+                edge = Edge(self, o, e)
         self.bind("k", adde)
         
         # ----------------------
@@ -70,7 +69,7 @@ TEST3=TEST3""")
     
     def layout(self, layout):
         self.layouting.set(False)
-        vertices = {vertex:vertex.center(self) for vertex in self.vertices}
+        vertices = {vertex:vertex.center() for vertex in self.vertices}
         edges = set()
         for edge in self.edges:
             # Add edge in edges if no edge in edges already share
@@ -80,7 +79,7 @@ TEST3=TEST3""")
                        or (e.origin == edge.end and e.end == edge.origin)])
                     <= 0):
                 edges.add(edge)
-        np = layout.apply(self, vertices, edges)
+        np = layout.apply(vertices, edges)
         
         try:
             self.apply_positions(np[0])
@@ -94,9 +93,9 @@ TEST3=TEST3""")
         positions -- a vertex -> x,y position dictionary.
         """
         for vertex in positions:
-            vertex.move_to(self, *positions[vertex])
+            vertex.move_to(*positions[vertex])
         for e in self.edges:
-            e.move(self)
+            e.move()
         
         self.update_scrollregion()
     
@@ -105,7 +104,7 @@ TEST3=TEST3""")
             if not self.layouting.get():
                 return
             
-            vertices = {vertex:vertex.center(self)
+            vertices = {vertex:vertex.center()
                         for vertex in self.vertices}
             
             edges = set()
@@ -116,7 +115,7 @@ TEST3=TEST3""")
                          if (e.origin == edge.origin and e.end == edge.end)
                       or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
                     edges.add(edge)
-            np, sf = layout.apply(self, vertices, edges, fixed=self.selected)
+            np, sf = layout.apply(vertices, edges, fixed=self.selected)
             
             self.apply_positions(np)
             
@@ -160,17 +159,17 @@ TEST3=TEST3""")
                 x, y = random.randint(0,dx), random.randint(0, dy)
                 position = x0 + x, y0 + y
         
-        vertex.draw(self, *position)
+        vertex.draw(*position)
         self.update_scrollregion()
         self.vertices.add(vertex)
-        for handle in vertex.handles(self):
+        for handle in vertex.handles():
             self.elements[handle] = vertex
     
     def delete_element(self, item):
         """
         Delete a given item.
         """
-        for handle in item.handles(self):
+        for handle in item.handles():
             self.delete(handle)
             if handle in self.elements:
                 del self.elements[handle]
@@ -185,16 +184,22 @@ TEST3=TEST3""")
         
         edge -- the edge to add.
         """
-        edge.draw(self)
+        edge.draw()
         self.edges.add(edge)
+    
+    def move_vertex(self, vertex, x, y):
+        """
+        Move vertex to (x,y) position.
+        """
+        vertex.move_to(x, y)
     
     def move_vertices(self, vertices, dx, dy):
         """Move the vertices and the connected edges of (dx,dy)."""
         for v in vertices:
-            v.move(self, dx, dy)
+            v.move(dx, dy)
             for e in self.edges:
                 if e.origin == v or e.end == v:
-                    e.move(self)
+                    e.move()
         
         # Update scrollregion
         self.update_scrollregion()
@@ -204,9 +209,9 @@ TEST3=TEST3""")
         if observed is self.selected:
             for v in self.vertices:
                 if v in self.selected:
-                    v.select(self)
+                    v.select()
                 else:
-                    v.deselect(self)
+                    v.deselect()
     
     def update_vertex(self, vertex):
         if vertex in self.elements.values():
@@ -363,61 +368,3 @@ class CanvasFrame(tk.Frame):
                                       button="1", modifier="Shift")
         mm = MovingMouse(self.canvas, self.canvas.selected,
                          button="1", modifier="")
-    
-    
-    def add_vertex(self, vertex):
-        """
-        Add the given vertex to the canvas of this frame.
-        
-        vertex -- a single vertex.
-        """
-        self.canvas.add_vertex(vertex)
-    
-    
-    def add_vertices(self, vertices):
-        """
-        Add the given set of vertices to the canvas of this frame.
-        
-        vertices -- a set of vertices.
-        """
-        for vertex in vertices:
-            self.add_vertex(vertex)
-    
-    
-    def add_edge(self, edge):
-        """
-        Add the given edge to the canvas of this frame.
-        
-        
-        edge -- a single edge.
-        """
-        self.canvas.add_edge(edge)
-    
-    
-    def add_edges(self, edges):
-        """
-        Add the given set of edges to the canvas of this frame.
-        
-        edges -- a set of edges.
-        """
-        for edge in edges:
-            self.add_edge(edge)
-
-
-def show_graph_in_canvas(vertices, edges):
-    """
-    Create a new window with a canvas and add all given vertices and edges.
-    """
-    root = tk.Tk()
-    
-    cframe = CanvasFrame(root)
-    
-    cframe.pack(fill="both", expand=True)
-    
-    # Add vertices and edges
-    for vertex in vertices:
-        cframe.add_vertex(vertex)
-    for edge in edges:
-        cframe.add_edge(edge)
-    
-    root.mainloop()
