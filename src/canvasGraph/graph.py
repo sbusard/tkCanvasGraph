@@ -42,14 +42,14 @@ class GraphElement:
                existing binding.
         """
         for handle in self.handles():
-            canvas.tag_bind(handle, event, callback, add)
+            self._canvas.tag_bind(handle, event, callback, add)
     
     def unbind(self, event):
         """
         Remove all the bindings for event of the element on canvas.
         """
         for handle in self.handles():
-            canvas.tag_unbind(handle, event)
+            self._canvas.tag_unbind(handle, event)
 
 
 class Vertex(GraphElement):
