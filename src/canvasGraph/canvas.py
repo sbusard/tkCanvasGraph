@@ -218,11 +218,12 @@ TEST3=TEST3""")
             keys = {k for k in self.elements if self.elements[k] == vertex}
             for key in keys:
                 del self.elements[key]
-            for handle in vertex.handles(self):
+            for handle in vertex.handles():
                 self.elements[handle] = vertex
             for e in self.edges:
                 if e.origin == vertex or e.end == vertex:
                     e.move()
+        self.update_scrollregion()
     
     def update_scrollregion(self):
         bbox = self.bbox("all")

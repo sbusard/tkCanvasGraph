@@ -232,7 +232,7 @@ class Vertex(GraphElement):
             override(textstyle, self.style.selected.text)
         
         canvas = self._canvas
-        x, y = self.center(canvas)
+        x, y = self.center()
         
         if self._label != "":
             if self._labelhandle == None:
@@ -242,7 +242,7 @@ class Vertex(GraphElement):
             else:
                 canvas.itemconfig(self._labelhandle,
                                   text=self._label)
-        
+            
             x0l, y0l, x1l, y1l = canvas.bbox(self._labelhandle)
         
             # Draw on canvas and store handle
@@ -255,6 +255,7 @@ class Vertex(GraphElement):
         else:
             if self._labelhandle != None:
                 canvas.delete(self._labelhandle)
+            self._labelhandle = None
             canvas.coords(self._handle, (x - VERTEXRADIUS,
                                          y - VERTEXRADIUS,
                                          x + VERTEXRADIUS,
