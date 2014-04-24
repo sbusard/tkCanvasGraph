@@ -188,10 +188,12 @@ class OneStepForceBasedLayout(Layout):
                     else:
                         other = edge.origin
                 
-                    hfx, hfy = self._hooke_attraction(positions,
-                                                      vertex, other)
-                    fx += hfx
-                    fy += hfy
+                    # Avoid computing the force for self-loop
+                    if edge.origin != edge.end:
+                        hfx, hfy = self._hooke_attraction(positions,
+                                                          vertex, other)
+                        fx += hfx
+                        fy += hfy
         
             forces[vertex] = fx, fy
                 
