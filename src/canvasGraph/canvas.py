@@ -190,12 +190,6 @@ TEST3=TEST3""")
         self.vertices.discard(element)
         self.edges.discard(element)
     
-    def move_vertex(self, vertex, x, y):
-        """
-        Move vertex to (x,y) position.
-        """
-        vertex.move_to(x, y)
-    
     def move_elements(self, elements, dx, dy):
         """Move the given elements of (dx,dy)."""
         for e in elements:
@@ -215,18 +209,6 @@ TEST3=TEST3""")
                     e.select()
                 else:
                     e.deselect()
-    
-    def update_vertex(self, vertex):
-        if vertex in self.elements.values():
-            keys = {k for k in self.elements if self.elements[k] == vertex}
-            for key in keys:
-                del self.elements[key]
-            for handle in vertex.handles():
-                self.elements[handle] = vertex
-            for e in self.edges:
-                if e.origin == vertex or e.end == vertex:
-                    e.move()
-        self.update_scrollregion()
     
     def update_scrollregion(self):
         bbox = self.bbox("all")
