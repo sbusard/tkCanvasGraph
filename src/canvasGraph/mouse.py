@@ -202,7 +202,7 @@ class MovingMouse(Mouse):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
             dx, dy = x - self.position[0], y - self.position[1]
-            self.canvas.move_vertices(self.selected, dx, dy)
+            self.canvas.move_elements(self.selected, dx, dy)
             self.position = x,y
             return False
         else:
@@ -272,12 +272,8 @@ class CreatingMouse(Mouse):
             # otherwise,
             #   do nothing
             
-            if (element is not None and element in self.vertices and
-                element != self.starting):
-                if len(list(e for e in self.canvas.edges
-                       if e.origin == self.starting and e.end == element)) <= 0:
-                    # No pre-existing edge, build it
-                    e = Edge(self.canvas, self.starting, element)
+            if (element is not None and element in self.vertices):
+                e = Edge(self.canvas, self.starting, element)
                 self.starting = None
                 return False
             else:

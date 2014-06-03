@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class ObservableSet(set):
     def __init__(self, s=()):
         super(ObservableSet,self).__init__(s)
@@ -36,3 +38,27 @@ ObservableSet._wrap_methods(['__ror__', 'difference_update', '__isub__',
     'intersection_update', '__xor__', '__ior__', '__sub__', 'add', 'remove',
     'clear'
 ])
+
+
+class AttrDict(dict):
+    """
+    A dictionary where keys can be accessed as attributes.
+    
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+    
+    def __deepcopy__(self, memo):
+        return AttrDict(deepcopy(dict(self)))
+    
+    def override(self, other):
+        """
+        Override the values of other with this dictionary; every key-value pair
+        of other is added to this dictionary, overriding the current value if
+        necessary.
+        
+        """
+        for k, v in other.items():
+            self[k] = v

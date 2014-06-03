@@ -5,12 +5,12 @@ class Layout:
     
     def apply(self, canvas, positions, edges):
         """
-        Apply this layout on canvas, with positions of vertices and edges.
-        Return a dictionary of new positions for vertices of "positions".
+        Apply this layout on canvas, with positions of elements.
+        Return a dictionary of new positions for elements of "positions".
         
         canvas -- the canvas on which operate;
-        positions -- a dictionary of vertex -> x,y positions;
-        edges -- a list of edges between vertices of positions.        
+        positions -- a dictionary of elements -> x,y positions;
+        edges -- a list of couples representing the edges.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
@@ -24,9 +24,9 @@ class OneStepForceBasedLayout(Layout):
     """
     
     def __init__(self):
-        self.minSpringLength = 60
-        self.springStiffness = 0.1
-        self.electricalRepulsion = 500
+        self.minSpringLength = 30
+        self.springStiffness = 0.3
+        self.electricalRepulsion = 250
         self.maxForce = 10
 
 
@@ -53,36 +53,11 @@ class OneStepForceBasedLayout(Layout):
     
         xv0, yv0, xv1, yv1 = (xvc - vw/2, yvc - vh/2, xvc + vw/2, yvc + vh/2)
         xo0, yo0, xo1, yo1 = (xoc - ow/2, yoc - oh/2, xoc + ow/2, yoc + oh/2)
-    
-        av = xv1 - xvc      #    +---a-----|
-        bv = yv1 - yvc      #    |         |
-        ao = xo1 - xoc      #    b        /
-        bo = yo1 - yoc      #    |      /
-                            #   _|____/
-    
-        if xoc != xvc:
-            m = abs((yoc - yvc) / (xoc - xvc))
         
-            dvx = (av * bv) / math.sqrt(av*av * m*m + bv*bv)
-            dvx *= -1 if xoc < xvc else 1
+        xvi, yvi = vertex.shape.intersection((xv0, yv0, xv1, yv1), (xoc, yoc))
+        xoi, yoi = other.shape.intersection((xo0, yo0, xo1, yo1), (xvc, yvc))
         
-            dox = (ao * bo) / math.sqrt(ao*ao * m*m + bo*bo)
-            dox *= -1 if xoc > xvc else 1
-        
-            dvy = (av * bv * m) / math.sqrt(av*av * m*m + bv*bv)
-            dvy *= -1 if yoc < yvc else 1
-        
-            doy = (ao * bo * m) / math.sqrt(ao*ao * m*m + bo*bo)
-            doy *= -1 if yoc > yvc else 1
-    
-        else:
-            dvx = dox = 0
-            dvy = bv
-            dvy *= -1 if yoc < yvc else 1
-            doy = bo
-            doy *= -1 if yoc > yvc else 1
-    
-        return (xvc + dvx, yvc + dvy, xoc + dox, yoc + doy)
+        return (xvi, yvi, xoi, yoi)
 
     def _hooke_attraction(self, positions, vertex, other):
         """
@@ -147,7 +122,10 @@ class OneStepForceBasedLayout(Layout):
     
         distance = math.sqrt(dx*dx + dy*dy)
     
-        force = -self.electricalRepulsion / (distance*distance)
+        if distance == 0:
+            force = self.maxForce
+        else:
+            force = -self.electricalRepulsion / (distance*distance)
         force = max(min(force, self.maxForce), -self.maxForce)
         fx = force * dx
         fy = force * dy
@@ -181,15 +159,15 @@ class OneStepForceBasedLayout(Layout):
                     fy += cfy
         
             # Spring forces
-            for edge in edges:
-                if edge.origin == vertex or edge.end == vertex:
-                    if edge.origin == vertex:
-                        other = edge.end
+            for origin, end in edges:
+                if origin == vertex or end == vertex:
+                    if origin == vertex:
+                        other = end
                     else:
-                        other = edge.origin
+                        other = origin
                 
                     # Avoid computing the force for self-loop
-                    if edge.origin != edge.end:
+                    if origin != end:
                         hfx, hfy = self._hooke_attraction(positions,
                                                           vertex, other)
                         fx += hfx
@@ -224,7 +202,7 @@ class ForceBasedLayout(OneStepForceBasedLayout):
     
     def __init__(self):
         super().__init__()
-        self.iterationNumber = 1000
+        self.iterationNumber = 100
         self.forceThreshold = 0.001
     
     def apply(self, vertices, edges, fixed=None):
@@ -285,9 +263,8 @@ class DotLayout:
             dot += (ids[v] + " " + "[label=\"" + v.label + "\"]" + ";\n")
         
         # For each state, add each transition to the representation
-        for edge in edges:
-            dot += (ids[edge.origin] + "->" + ids[edge.end] + " " +
-                        "[label=\"" + edge.label + "\"]" + ";\n")
+        for origin, end in edges:
+            dot += (ids[origin] + "->" + ids[end] + ";\n")
         
         dot += "}"
         

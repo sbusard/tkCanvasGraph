@@ -2,7 +2,7 @@ import tkinter as tk
 import math
 import random
 
-from .observable import ObservableSet
+from .util import ObservableSet
 from .mouse import (SelectingMouse, SelectionModifyingMouse,
                    MovingMouse, CreatingMouse)
 from .graph import Vertex, Edge
@@ -24,8 +24,6 @@ class CanvasGraph(tk.Canvas):
         self.selected.register(self)
         
         self.elements = {}
-        
-        # Vertices and edges
         self.vertices = set()
         self.edges = set()
         
@@ -61,7 +59,7 @@ TEST3=TEST3""")
                                             and edge.end == e]) <= 0]
             if len(pairs) > 0:
                 o, e = random.choice(pairs)
-                edge = Edge(self, o, e)
+                edge = Edge(self, o, e, label=str(random.randint(0,100)))
         self.bind("k", adde)
         
         # ----------------------
@@ -69,16 +67,12 @@ TEST3=TEST3""")
     
     def layout(self, layout):
         self.layouting.set(False)
-        vertices = {vertex:vertex.center() for vertex in self.vertices}
+        vertices = {element:element.center()
+                    for element in self.elements.values()}
         edges = set()
         for edge in self.edges:
-            # Add edge in edges if no edge in edges already share
-            # the extremities
-            if (len([e for e in edges
-                       if (e.origin == edge.origin and e.end == edge.end)
-                       or (e.origin == edge.end and e.end == edge.origin)])
-                    <= 0):
-                edges.add(edge)
+            edges.add((edge.origin, edge))
+            edges.add((edge, edge.end))
         np = layout.apply(vertices, edges)
         
         try:
@@ -92,11 +86,10 @@ TEST3=TEST3""")
         
         positions -- a vertex -> x,y position dictionary.
         """
-        for vertex in positions:
-            vertex.move_to(*positions[vertex])
-        for e in self.edges:
-            e.move()
-        
+        for element in positions.keys() & self.vertices:
+            element.move_to(*positions[element])
+        for element in positions.keys() & self.edges:
+            element.move_to(*positions[element])
         self.update_scrollregion()
     
     def interactive_layout(self, layout):
@@ -104,17 +97,13 @@ TEST3=TEST3""")
             if not self.layouting.get():
                 return
             
-            vertices = {vertex:vertex.center()
-                        for vertex in self.vertices}
-            
+            vertices = {element:element.center()
+                        for element in self.elements.values()}
             edges = set()
             for edge in self.edges:
-                # Add edge in edges if no edge in edges already share
-                # the extremities
-                if len([e for e in edges
-                         if (e.origin == edge.origin and e.end == edge.end)
-                      or (e.origin == edge.end and e.end == edge.origin)]) <= 0:
-                    edges.add(edge)
+                edges.add((edge.origin, edge))
+                edges.add((edge, edge.end))
+            
             np, sf = layout.apply(vertices, edges, fixed=self.selected)
             
             self.apply_positions(np)
@@ -139,11 +128,12 @@ TEST3=TEST3""")
         else:
             return None
     
-    def add_vertex(self, vertex, position=None):
+    def add_element(self, element, position=None):
         """
-        Add the given vertex on this canvas at position, if specified.
+        Add the given element on this canvas at position, if specified.
+        If position is None, set it at random.
         
-        vertex -- the vertex to add and draw;
+        element -- the element to add and draw;
         position -- if not None, an x,y tuple.
         """
         # Compute position if not specified;
@@ -159,33 +149,46 @@ TEST3=TEST3""")
                 x, y = random.randint(0,dx), random.randint(0, dy)
                 position = x0 + x, y0 + y
         
-        vertex.draw(*position)
+        element.draw(*position)
         self.update_scrollregion()
-        self.vertices.add(vertex)
-        for handle in vertex.handles():
-            self.elements[handle] = vertex
+        for handle in element.handles():
+            self.elements[handle] = element
     
-    def delete_element(self, item):
+    def add_vertex(self, vertex, position=None):
         """
-        Delete a given item.
+        Add the given vertex on this canvas at position, if specified.
+        If position is None, set it at random.
+        
+        vertex -- the vertex to add and draw;
+        position -- if not None, an x,y tuple.
         """
-        for handle in item.handles():
+        self.add_element(vertex, position)
+        self.vertices.add(vertex)
+    
+    def add_edge(self, edge, position=None):
+        """
+        Add the given edge on this canvas at position, if specified.
+        If position is None, set it at random.
+        
+        edge -- the edge to add and draw;
+        position -- if not None, an x,y tuple.
+        """
+        self.add_element(edge, position)
+        self.edges.add(edge)
+    
+    
+    def delete_element(self, element):
+        """Delete a given element."""
+        
+        for handle in element.handles():
             self.delete(handle)
             if handle in self.elements:
                 del self.elements[handle]
-        
-        self.vertices.discard(item)
-        self.edges.discard(item)
-        self.selected.discard(item)
-    
-    def add_edge(self, edge):
-        """
-        Add the given edge on this canvas and draw it.
-        
-        edge -- the edge to add.
-        """
-        edge.draw()
-        self.edges.add(edge)
+                
+        # Discard from other sets (such as selected)
+        self.selected.discard(element)
+        self.vertices.discard(element)
+        self.edges.discard(element)
     
     def move_vertex(self, vertex, x, y):
         """
@@ -193,13 +196,13 @@ TEST3=TEST3""")
         """
         vertex.move_to(x, y)
     
-    def move_vertices(self, vertices, dx, dy):
-        """Move the vertices and the connected edges of (dx,dy)."""
-        for v in vertices:
-            v.move(dx, dy)
-            for e in self.edges:
-                if e.origin == v or e.end == v:
-                    e.move()
+    def move_elements(self, elements, dx, dy):
+        """Move the given elements of (dx,dy)."""
+        for e in elements:
+            e.move(dx, dy)
+        for edge in self.edges:
+            if edge.origin in elements or edge.end in elements:
+                edge.refresh_arrows()
         
         # Update scrollregion
         self.update_scrollregion()
@@ -207,11 +210,11 @@ TEST3=TEST3""")
     
     def update(self, observed):
         if observed is self.selected:
-            for v in self.vertices:
-                if v in self.selected:
-                    v.select()
+            for e in self.elements.values():
+                if e in self.selected:
+                    e.select()
                 else:
-                    v.deselect()
+                    e.deselect()
     
     def update_vertex(self, vertex):
         if vertex in self.elements.values():
@@ -361,11 +364,11 @@ class CanvasFrame(tk.Frame):
         # Mouses for the canvas
         sm = SelectingMouse(self.canvas,
                             selection=self.canvas.selected, 
-                            elements=self.canvas.vertices,
+                            elements=self.canvas.elements.values(),
                             button="1", modifier="")
         smm = SelectionModifyingMouse(self.canvas,
                                       selection=self.canvas.selected,
-                                      elements=self.canvas.vertices,
+                                      elements=self.canvas.elements.values(),
                                       button="1", modifier="Shift")
         mm = MovingMouse(self.canvas, self.canvas.selected,
                          button="1", modifier="")
