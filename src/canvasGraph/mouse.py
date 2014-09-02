@@ -58,6 +58,8 @@ class SelectingMouse(Mouse):
         
         self.selecting = None
         self.selection = None
+        
+        self.mousemoved = False
     
     def pressed(self, event):
         element = self.canvas.current_element()
