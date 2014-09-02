@@ -1,7 +1,7 @@
 import math
 import tkinter as tk
 from copy import deepcopy
-from .util import AttrDict
+from .util import AttrDict, CanvasToolTip
 
 
 # Elements common style
@@ -161,14 +161,18 @@ class GraphElement:
         style.selected.shape.fill = "yellow"
     """
     
-    def __init__(self, canvas, shape, label="", position=None):
+    def __init__(self, canvas, shape, label="", tooltip=None):
         """
-        Create a graph element with shape and label on canvas.
+        Create a graph element with shape, label and tooltip on canvas.
         The element must be added to the canvas after initialisation.
+        
+        If tooltip is not None, tooltip must be a string that will be used
+        on the element.
         """
         self._canvas = canvas
         self.shape = shape
         self._label = label
+        self.tooltip = tooltip
         
         # Keep track of handle and handle of labels in canvas
         self._handle = None
@@ -209,7 +213,12 @@ class GraphElement:
         self._handle = self.shape.draw(canvas, bbox, self.style.common.shape)            
         
         if self._labelhandle is not None:
-             canvas.tag_raise(self._labelhandle)
+            canvas.tag_raise(self._labelhandle)
+        
+        if self.tooltip is not None:
+            for handle in self.handles():
+                CanvasToolTip(canvas, handle, follow_mouse=1,
+                              text=self.tooltip)
     
     def move(self, dx, dy):
         """
@@ -326,12 +335,12 @@ class Vertex(GraphElement):
     selecting the vertex, but will not change back when deselecting it.
     """
     
-    def __init__(self, canvas, label="", position=None):
+    def __init__(self, canvas, label="", position=None, tooltip=None):
         """
         Create a vertex with label on canvas.
         """
         super(Vertex, self).__init__(canvas, shape=Oval(), label=label,
-                                             position=position)
+                                             tooltip=tooltip)
         
         self._canvas.add_vertex(self, position)
 
@@ -344,13 +353,14 @@ class Edge(GraphElement):
     style.common.arrow dictionary for the arrow of the edge.
     """
     
-    def __init__(self, canvas, origin, end, label="", position=None):
+    def __init__(self, canvas, origin, end, label="", position=None,
+                 tooltip=None):
         """
         Create an edge between origin and end. If position is None, draw the 
         edge between origin and end.
         """
         super(Edge, self).__init__(canvas, shape=Rectangle(), label=label,
-                                           position=position)
+                                           tooltip=tooltip)
         self.origin = origin
         self.end = end
         self._arrowhandle = None
