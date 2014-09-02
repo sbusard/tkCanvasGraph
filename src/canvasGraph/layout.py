@@ -88,8 +88,11 @@ class OneStepForceBasedLayout(Layout):
         dcx, dcy = ocx - vcx, ocy - vcy
         length = math.sqrt(dcx*dcx + dcy*dcy) - distance
         length = max(length, self.minSpringLength)
-    
-        force = -self.springStiffness * (length - distance) / distance
+        
+        if distance == 0:
+            force = -self.maxForce
+        else:
+            force = -self.springStiffness * (length - distance) / distance
         force = max(min(force, self.maxForce), -self.maxForce)
         fx = force * dx
         fy = force * dy
@@ -123,7 +126,7 @@ class OneStepForceBasedLayout(Layout):
         distance = math.sqrt(dx*dx + dy*dy)
     
         if distance == 0:
-            force = self.maxForce
+            force = -self.maxForce
         else:
             force = -self.electricalRepulsion / (distance*distance)
         force = max(min(force, self.maxForce), -self.maxForce)
