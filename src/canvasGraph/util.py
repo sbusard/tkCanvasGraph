@@ -129,7 +129,7 @@ class CanvasToolTip:
     create_contents() : creates the contents of the tooltip window
                         (by default a tkinter.Label)
     '''
-    def __init__(self, canvas, handle, text='Your text here', delay=1000,
+    def __init__(self, canvas, handle, text='Your text here', delay=500,
                  **opts):
         self.canvas = canvas
         self._opts = {'anchor':'center', 'bd':1, 'bg':'lightyellow',
