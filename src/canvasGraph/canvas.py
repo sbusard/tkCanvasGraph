@@ -342,7 +342,13 @@ class CanvasFrame(tk.Frame):
         except ImportError:
             pass
         
-
+        
+        # Scroll with mouse
+        def on_mousewheel(event):
+            self.canvas.yview_scroll(-1 * event.delta, "units")
+        self.canvas.bind("<MouseWheel>", on_mousewheel)
+        
+        
         # Mouses for the canvas
         sm = SelectingMouse(self.canvas,
                             selection=self.canvas.selected, 
