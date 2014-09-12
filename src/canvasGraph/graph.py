@@ -391,7 +391,7 @@ class Edge(GraphElement):
     def refresh_arrows(self):
         canvas = self._canvas
         if self._arrowhandle is not None:
-            canvas.delete(self._arrowhandle)
+            canvas.delete_handle(self._arrowhandle)
         # Draw line: from origin to label and from label to end
         xo, yo = self.origin.shape.intersection(self.origin.bbox(),
                                                 self.center())

@@ -181,14 +181,18 @@ TEST3=TEST3""")
         """Delete a given element."""
         
         for handle in element.handles():
-            self.delete(handle)
-            if handle in self.elements:
-                del self.elements[handle]
+            self.delete_handle(handle)
                 
         # Discard from other sets (such as selected)
         self.selected.discard(element)
         self.vertices.discard(element)
         self.edges.discard(element)
+    
+    def delete_handle(self, handle):
+        """Delete the given handle."""
+        self.delete(handle)
+        if handle in self.elements:
+            del self.elements[handle]
     
     def move_elements(self, elements, dx, dy):
         """Move the given elements of (dx,dy)."""
