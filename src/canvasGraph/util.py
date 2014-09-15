@@ -37,7 +37,7 @@ ObservableSet._wrap_methods(['__ror__', 'difference_update', '__isub__',
     'difference', '__iand__', 'union', '__ixor__', 
     'symmetric_difference_update', '__or__', 'copy', '__rxor__',
     'intersection_update', '__xor__', '__ior__', '__sub__', 'add', 'remove',
-    'clear'
+    'clear', 'discard'
 ])
 
 
