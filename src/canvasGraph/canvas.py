@@ -315,26 +315,29 @@ class CanvasFrame(tk.Frame):
         # Toolbar
         frame = tk.Frame(self)
         frame.grid(row=0, sticky=tk.W+tk.E)
+        self.toolbar = tk.Frame(frame)
+        self.toolbar.pack(fill=tk.BOTH, expand=True)
         
         # Interactive layout
         osfbl = OneStepForceBasedLayout()
         self.canvas.layouting = tk.BooleanVar()
         self.canvas.layouting.set(False)
-        self.canvas.layouting.trace("w",
-                            lambda *args: self.canvas.interactive_layout(osfbl))
-        ilbutton = tk.Checkbutton(frame,
+        self.canvas.layouting.trace("w", lambda *args:
+                                   self.canvas.interactive_layout(osfbl))
+        ilbutton = tk.Checkbutton(self.toolbar,
                                   text="Interactive layout",
                                   onvalue=True, offvalue=False,
                                   variable=self.canvas.layouting)
         ilbutton.grid(row=0, sticky=tk.W)
         
         self.canvas.bind("<Control-i>",
-           lambda e: self.canvas.layouting.set(not self.canvas.layouting.get()))
+           lambda e: self.canvas.layouting.set(
+                     not self.canvas.layouting.get()))
         
         
         # Force-based layout
         fbl = ForceBasedLayout()
-        fblbutton = tk.Button(frame,
+        fblbutton = tk.Button(self.toolbar,
                               text="Force-based layout",
                               command=lambda : self.canvas.layout(fbl))
         fblbutton.config()
@@ -348,7 +351,7 @@ class CanvasFrame(tk.Frame):
             import pydot
             
             dl = DotLayout()
-            dlbutton = tk.Button(frame,
+            dlbutton = tk.Button(self.toolbar,
                                  text="Dot layout",
                                  command=lambda : self.canvas.layout(dl))
             dlbutton.grid(row=0, column=2, sticky=tk.W)
@@ -375,3 +378,4 @@ class CanvasFrame(tk.Frame):
                                       button="1", modifier="Shift")
         mm = MovingMouse(self.canvas, self.canvas.selected,
                          button="1", modifier="")
+        self.mouses = [sm, smm, mm]
