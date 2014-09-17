@@ -11,6 +11,8 @@ class Mouse:
         self.canvas = canvas
         # Register to the canvas
         self.canvas.register_mouse(self, button, modifier)
+        self.button = button
+        self.modifier = modifier
     
     def pressed(self, event):
         """
