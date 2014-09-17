@@ -254,21 +254,18 @@ TEST3=TEST3""")
     
     def _pressed(self, button, modifier, event):
         if (button, modifier) in self.mouses:
-            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.pressed(event):
                     break
     
     def _moved(self, button, modifier, event):
         if (button, modifier) in self.mouses:
-            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.moved(event):
                     break
     
     def _released(self, button, modifier, event):
         if (button, modifier) in self.mouses:
-            self.new_event = True
             for mouse in self.mouses[(button, modifier)]:
                 if not mouse.released(event):
                     break
