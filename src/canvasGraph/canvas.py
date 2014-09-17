@@ -237,6 +237,20 @@ TEST3=TEST3""")
         
         self.mouses[(button, modifier)].append(mouse)
     
+    def unregister_mouse(self, mouse, button, modifier):
+        """Unregister a registered mouse for button pressed with modifier."""
+        
+        modifier = modifier + "-" if modifier != "" else modifier
+        
+        if (button, modifier) in self.mouses:
+            if mouse in self.mouses[(button, modifier)]:
+                self.mouses[(button, modifier)].remove(mouse)
+        
+            if len(self.mouses[(button, modifier)]) <= 0:
+                del self.mouses[(button, modifier)]
+                self.unbind("<" + modifier + "ButtonPress-" + button + ">")
+                self.unbind("<" + modifier + "B" + button + "-Motion>")
+                self.unbind("<" + modifier + "ButtonRelease-" + button + ">")
     
     def _pressed(self, button, modifier, event):
         if (button, modifier) in self.mouses:
