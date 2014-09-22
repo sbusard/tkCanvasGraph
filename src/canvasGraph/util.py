@@ -4,13 +4,14 @@ import tkinter
 class ObservableSet(set):
     def __init__(self, s=()):
         super(ObservableSet,self).__init__(s)
-        self._observers = set()
+        self._observers = []
     
     def register(self, observer):
-        self._observers.add(observer)
+        self._observers.append(observer)
     
     def unregister(self, observer):
-        self._observers.discard(observer)
+        if observer in self._observers:
+            self._observers.remove(observer)
     
     def notify(self):
         for observer in self._observers:
