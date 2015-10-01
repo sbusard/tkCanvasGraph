@@ -1,5 +1,4 @@
 import tkinter as tk
-import math
 import random
 
 from .util import ObservableSet
@@ -32,38 +31,6 @@ class CanvasGraph(tk.Canvas):
         self.config(scrollregion=self.bbox("all"))
         
         self.focus_set()
-        
-        
-        # TODO REMOVE THIS -----
-        
-        # One step of force-based layout
-        self.bind("o", lambda e: self.layout(OneStepForceBasedLayout()))
-        
-        # Random adding
-        def addv(event):
-            v = Vertex(self, str(random.randint(0,100)) +
-"""
-TEST1=TEST1
-TEST2=TEST2
-TEST3=TEST3""")
-            v.style.common.shape.width = 2
-            v.style.selected.shape.outline = "red"
-            v.refresh()
-        self.bind("j", addv)
-        def adde(event):
-            pairs = [(o, e) for o in self.vertices
-                            for e in self.vertices
-                            if o != e
-                            if len([edge for edge in self.edges
-                                         if edge.origin == o
-                                            and edge.end == e]) <= 0]
-            if len(pairs) > 0:
-                o, e = random.choice(pairs)
-                edge = Edge(self, o, e, label=str(random.randint(0,100)))
-        self.bind("k", adde)
-        
-        # ----------------------
-    
     
     def layout(self, layout):
         self.layouting.set(False)
