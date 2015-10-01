@@ -1,8 +1,11 @@
+from .graph import Vertex, Edge
+
+
 class Mouse:
     """
     A generic mouse doing nothing.
     """
-    
+
     def __init__(self, canvas, button, modifier):
         """
         Register this mouse to the canvas, for button pressed, moved and
@@ -13,24 +16,24 @@ class Mouse:
         self.canvas.register_mouse(self, button, modifier)
         self.button = button
         self.modifier = modifier
-    
+
     def pressed(self, event):
         """
         React to mouse button pressed.
         """
-        return True # Do nothing, pass the hand
-    
+        return True  # Do nothing, pass the hand
+
     def moved(self, event):
         """
         React to mouse moved.
         """
-        return True # Do nothing, pass the hand
-        
+        return True  # Do nothing, pass the hand
+
     def released(self, event):
         """
         React to mouse button released.
         """
-        return True # Do nothing, pass the hand
+        return True  # Do nothing, pass the hand
 
 
 class SelectingMouse(Mouse):
@@ -41,7 +44,7 @@ class SelectingMouse(Mouse):
         * select individual elements by clicking on them;
         * select several elements by drawing a box around them.
     """
-    
+
     def __init__(self, canvas, selection=None, elements=None, button="1",
                  modifier=""):
         """
@@ -54,19 +57,19 @@ class SelectingMouse(Mouse):
         modifier -- the modifier for mouse events.
         """
         super().__init__(canvas, button, modifier)
-        
+
         self.selected = set() if selection is None else selection
         self.elements = elements
-        
+
         self.selecting = None
         self.selection = None
-        
+
         self.mousemoved = False
-    
+
     def pressed(self, event):
         element = self.canvas.current_element()
         self.mousemoved = False
-        
+
         # if element exists,
         #   if element is in elements and not selected,
         #       selection becomes the element
@@ -74,12 +77,12 @@ class SelectingMouse(Mouse):
         #       do nothing, pass the hand
         # if element does not exist,
         #   start selecting box
-        
+
         if element is not None:
             if ((self.elements is None or element in self.elements) and
-                element not in self.selected):
+                        element not in self.selected):
                 self.selected.clear()
-                self.selected.add(element)                
+                self.selected.add(element)
             return True
         else:
             self.selected.clear()
@@ -89,8 +92,7 @@ class SelectingMouse(Mouse):
                                                           self.selecting,
                                                           outline="gray")
             return False
-        
-    
+
     def moved(self, event):
         self.mousemoved = True
         if self.selecting is None:
@@ -101,7 +103,7 @@ class SelectingMouse(Mouse):
                                self.canvas.canvasy(event.y),
                                *self.selecting)
             return False
-    
+
     def released(self, event):
         if self.mousemoved:
             self.mousemoved = False
@@ -110,7 +112,7 @@ class SelectingMouse(Mouse):
             else:
                 self.selected.clear()
                 for e in self.canvas.find_enclosed(
-                                           *self.canvas.coords(self.selection)):
+                        *self.canvas.coords(self.selection)):
                     e = self.canvas.element_by_handle(e)
                     if self.elements is None or e in self.elements:
                         self.selected.add(e)
@@ -138,9 +140,9 @@ class SelectionModifyingMouse(Mouse):
     The added behaviour is adding/removing elements from selection when they
     are clicked.
     """
-    
+
     def __init__(self, canvas, selection=None, elements=None,
-                 button="1",modifier=""):
+                 button="1", modifier=""):
         """
         canvas -- the canvas on which operate;
         selection -- the set in which keeping track of selected elements.
@@ -151,22 +153,22 @@ class SelectionModifyingMouse(Mouse):
         modifier -- the modifier for mouse events.
         """
         super().__init__(canvas, button, modifier)
-        
+
         self.selected = set() if selection is None else selection
         self.elements = elements
-    
+
     def pressed(self, event):
         element = self.canvas.current_element()
-        
+
         if element in self.selected:
             self.selected.remove(element)
             return False
-            
+
         elif ((self.elements is None or element in self.elements) and
-              element not in self.selected):
+                      element not in self.selected):
             self.selected.add(element)
             return False
-        
+
         return True
 
 
@@ -176,7 +178,7 @@ class MovingMouse(Mouse):
     
     The added behaviour is moving the selection when dragged.
     """
-    
+
     def __init__(self, canvas, selected, button="1", modifier=""):
         """
         canvas -- the canvas on which operate;
@@ -188,10 +190,10 @@ class MovingMouse(Mouse):
         self.selected = selected
         self.moving = False
         self.position = None
-    
+
     def pressed(self, event):
         element = self.canvas.current_element()
-        
+
         # if element is in selection, start moving
         if element is not None and element in self.selected:
             self.moving = True
@@ -200,18 +202,18 @@ class MovingMouse(Mouse):
             return False
         else:
             return True
-    
+
     def moved(self, event):
         if self.moving:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
             dx, dy = x - self.position[0], y - self.position[1]
             self.canvas.move_elements(self.selected, dx, dy)
-            self.position = x,y
+            self.position = x, y
             return False
         else:
             return True
-    
+
     def released(self, event):
         if self.moving:
             self.moving = False
@@ -220,8 +222,6 @@ class MovingMouse(Mouse):
         else:
             return True
 
-
-from .graph import Vertex, Edge
 
 class CreatingMouse(Mouse):
     """
@@ -232,7 +232,7 @@ class CreatingMouse(Mouse):
         * creating an edge between two different vertices when dragging
           from one vertex to another.
     """
-    
+
     def __init__(self, canvas, vertices, button="1", modifier=""):
         """
         canvas -- the canvas on which operate;
@@ -243,41 +243,41 @@ class CreatingMouse(Mouse):
         super().__init__(canvas, button, modifier)
         self.vertices = vertices
         self.starting = None
-    
+
     def pressed(self, event):
         element = self.canvas.current_element()
-        
+
         # if element exists and is a vertex,
         #   start to build an edge
         # otherwise,
         #   build a vertex at position
-        
-        if (element is not None and element in self.vertices):
+
+        if element is not None and element in self.vertices:
             self.starting = element
             return False
         else:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            v = Vertex(self.canvas, position=(x, y))
+            Vertex(self.canvas, position=(x, y))
             return False
-    
+
     def moved(self, event):
         if self.starting is not None:
             return False
         else:
             return True
-    
+
     def released(self, event):
         if self.starting is not None:
             element = self.canvas.current_element()
-            
+
             # if element exists, is a vertex and is not starting,
             #   add an edge 
             # otherwise,
             #   do nothing
-            
-            if (element is not None and element in self.vertices):
-                e = Edge(self.canvas, self.starting, element)
+
+            if element is not None and element in self.vertices:
+                Edge(self.canvas, self.starting, element)
                 self.starting = None
                 return False
             else:

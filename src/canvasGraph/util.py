@@ -1,18 +1,19 @@
 from copy import deepcopy
 import tkinter
 
+
 class ObservableSet(set):
     def __init__(self, s=()):
-        super(ObservableSet,self).__init__(s)
+        super(ObservableSet, self).__init__(s)
         self._observers = []
-    
+
     def register(self, observer):
         self._observers.append(observer)
-    
+
     def unregister(self, observer):
         if observer in self._observers:
             self._observers.remove(observer)
-    
+
     def notify(self):
         for observer in self._observers:
             observer.update(self)
@@ -28,18 +29,24 @@ class ObservableSet(set):
                 if old != self:
                     self.notify()
                 return result
+
             inner.fn_name = name
             setattr(cls, name, inner)
+
         for name in names:
             wrap_method_closure(name)
 
-ObservableSet._wrap_methods(['__ror__', 'difference_update', '__isub__', 
-    'symmetric_difference', '__rsub__', '__and__', '__rand__', 'intersection',
-    'difference', '__iand__', 'union', '__ixor__', 
-    'symmetric_difference_update', '__or__', 'copy', '__rxor__',
-    'intersection_update', '__xor__', '__ior__', '__sub__', 'add', 'remove',
-    'clear', 'discard', 'update'
-])
+
+ObservableSet._wrap_methods(['__ror__', 'difference_update', '__isub__',
+                             'symmetric_difference', '__rsub__', '__and__',
+                             '__rand__', 'intersection',
+                             'difference', '__iand__', 'union', '__ixor__',
+                             'symmetric_difference_update', '__or__', 'copy',
+                             '__rxor__',
+                             'intersection_update', '__xor__', '__ior__',
+                             '__sub__', 'add', 'remove',
+                             'clear', 'discard', 'update'
+                             ])
 
 
 class AttrDict(dict):
@@ -47,14 +54,14 @@ class AttrDict(dict):
     A dictionary where keys can be accessed as attributes.
     
     """
-    
+
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
-    
+
     def __deepcopy__(self, memo):
-        return AttrDict(deepcopy(dict(self)))
-    
+        return AttrDict(deepcopy(dict(self), memo=memo))
+
     def override(self, other):
         """
         Override the values of other with this dictionary; every key-value pair
@@ -67,15 +74,15 @@ class AttrDict(dict):
 
 
 class CanvasToolTip:
-    '''
+    """
     Modified from http://tkinter.unpythonic.net/wiki/ToolTip
-    
+
     Michael Lange <klappnase (at) freakmail (dot) de>
-    
+
     The ToolTip class provides a flexible tooltip widget for tkinter; it is
     based on IDLE's ToolTip module which unfortunately seems to be broken (at
     least the version I saw).
-    
+
     INITIALIZATION OPTIONS:
     anchor :        where the text should be positioned inside the widget, must
                     be on of "n", "s", "e", "w", "nw" and so on;
@@ -129,28 +136,29 @@ class CanvasToolTip:
     coords() :          calculates the screen coordinates of the tooltip window
     create_contents() : creates the contents of the tooltip window
                         (by default a tkinter.Label)
-    '''
+    """
+
     def __init__(self, canvas, handle, text='Your text here', delay=500,
                  **opts):
         self.canvas = canvas
-        self._opts = {'anchor':'center', 'bd':1, 'bg':'lightyellow',
-                      'delay':delay, 'fg':'black', 'follow_mouse':0,
-                      'font':None, 'justify':'left', 'padx':4, 'pady':2,
-                      'relief':'solid', 'state':'normal', 'text':text,
-                      'textvariable':None, 'width':0, 'wraplength':150}
+        self._opts = {'anchor': 'center', 'bd': 1, 'bg': 'lightyellow',
+                      'delay': delay, 'fg': 'black', 'follow_mouse': 0,
+                      'font': None, 'justify': 'left', 'padx': 4, 'pady': 2,
+                      'relief': 'solid', 'state': 'normal', 'text': text,
+                      'textvariable': None, 'width': 0, 'wraplength': 150}
         self.configure(**opts)
         self._tipwindow = None
         self._id = None
         self._id1 = self.canvas.tag_bind(handle, "<Enter>", self.enter, '+')
         self._id2 = self.canvas.tag_bind(handle, "<Leave>", self.leave, '+')
-        self._id3 = self.canvas.tag_bind(handle,"<ButtonPress>", self.leave,
+        self._id3 = self.canvas.tag_bind(handle, "<ButtonPress>", self.leave,
                                          '+')
         self._follow_mouse = 0
         if self._opts['follow_mouse']:
             self._id4 = self.canvas.tag_bind(handle, "<Motion>", self.motion,
                                              '+')
             self._follow_mouse = 1
-    
+
     def configure(self, **opts):
         for key in opts:
             if key in self._opts:
@@ -158,25 +166,25 @@ class CanvasToolTip:
             else:
                 msg = 'KeyError: Unknown option: "{}"'.format(key)
                 raise KeyError(msg)
-    
+
     # these methods handle the callbacks on "<Enter>", "<Leave>" and <Motion>"
     # events on the parent widget;
     # override them if you want to change the widget's behavior
-    
+
     def enter(self, event=None):
         self._schedule()
-        
+
     def leave(self, event=None):
         self._unschedule()
         self._hide()
-    
+
     def motion(self, event=None):
         if self._tipwindow and self._follow_mouse:
             x, y = self.coords()
             self._tipwindow.wm_geometry("+{:d}+{:d}".format(int(x), int(y)))
-    
+
     # the methods that do the work:
-    
+
     def _schedule(self):
         self._unschedule()
         if self._opts['state'] == 'disabled':
@@ -184,10 +192,10 @@ class CanvasToolTip:
         self._id = self.canvas.after(self._opts['delay'], self._show)
 
     def _unschedule(self):
-        id = self._id
+        id_ = self._id
         self._id = None
-        if id:
-            self.canvas.after_cancel(id)
+        if id_:
+            self.canvas.after_cancel(id_)
 
     def _show(self):
         if self._opts['state'] == 'disabled':
@@ -208,15 +216,15 @@ class CanvasToolTip:
             x, y = self.coords()
             tw.wm_geometry("+{:d}+{:d}".format(int(x), int(y)))
             tw.deiconify()
-    
+
     def _hide(self):
         tw = self._tipwindow
         self._tipwindow = None
         if tw:
             tw.destroy()
-                
+
     # these methods might be overridden in derived classes:
-    
+
     def coords(self):
         # The tip window must be completely outside the master widget;
         # otherwise when the mouse enters the tip window we get

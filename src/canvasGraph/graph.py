@@ -11,17 +11,18 @@ element_style.shape.fill = "white"
 element_style.text = AttrDict()
 element_style.text.justify = tk.CENTER
 
-
 selected_element_style = AttrDict()
 selected_element_style.shape = AttrDict()
 selected_element_style.shape.fill = "yellow"
 selected_element_style.text = AttrDict()
 
+
 class Shape:
     """
     The shape of a graph element.
     """
-    def draw(canvas, bbox, style):
+
+    def draw(self, canvas, bbox, style):
         """
         Draw this shape on canvas, around the given bounding box, with style,
         and return the handle on canvas.
@@ -31,8 +32,8 @@ class Shape:
         style -- the style of the shape.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
-    
-    def intersection(bbox, end):
+
+    def intersection(self, bbox, end):
         """
         Return the point of intersection between this shape with given bouding
         box, and the line segment defined by the center of this bounding box
@@ -46,90 +47,89 @@ class Shape:
 
 
 class Oval(Shape):
-    
     def __init__(self, diameter=20):
         """
         Create a new oval shape with default diameter. Default diameter is used
         to draw a circle when the bounding box to draw around is too small.
         """
         self._diameter = diameter
-    
+
     def draw(self, canvas, bbox, style):
         x0l, y0l, x1l, y1l = bbox
-        xc, yc = (x1l + x0l)/2, (y1l + y0l)/2
-        
-        if x1l-x0l < self._diameter:
-            x0e = xc - self._diameter/2
-            x1e = xc + self._diameter/2
+        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
+
+        if x1l - x0l < self._diameter:
+            x0e = xc - self._diameter / 2
+            x1e = xc + self._diameter / 2
         else:
-            x0e = xc - (x1l-x0l)/2 * math.sqrt(2)
-            x1e = xc + (x1l-x0l)/2 * math.sqrt(2)
-        
-        if y1l-y0l < self._diameter:
-            y0e = yc - self._diameter/2
-            y1e = yc + self._diameter/2
+            x0e = xc - (x1l - x0l) / 2 * math.sqrt(2)
+            x1e = xc + (x1l - x0l) / 2 * math.sqrt(2)
+
+        if y1l - y0l < self._diameter:
+            y0e = yc - self._diameter / 2
+            y1e = yc + self._diameter / 2
         else:
-            y0e = yc - (y1l-y0l)/2 * math.sqrt(2)
-            y1e = yc + (y1l-y0l)/2 * math.sqrt(2)
-        
-        return canvas.create_oval((x0e, y0e, x1e, y1e),**style)
-    
+            y0e = yc - (y1l - y0l) / 2 * math.sqrt(2)
+            y1e = yc + (y1l - y0l) / 2 * math.sqrt(2)
+
+        return canvas.create_oval((x0e, y0e, x1e, y1e), **style)
+
     def intersection(self, bbox, end):
         xo0, yo0, xo1, yo1 = bbox
         xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
         xec, yec = end
-        
+
         ao = xo1 - xoc
         bo = yo1 - yoc
-        
+
         if xec != xoc:
             m = (yec - yoc) / (xec - xoc)
-            
+
             dox = (ao * bo) / math.sqrt(ao * ao * m * m + bo * bo)
             doy = (ao * bo * m) / math.sqrt(ao * ao * m * m + bo * bo)
-        
+
         else:
             dox = 0
             doy = bo * (-1 if yec > yoc else 1)
-        
+
         return (xoc + dox if xec >= xoc else xoc - dox,
                 yoc + doy if xec > xoc else yoc - doy)
 
+
 class Rectangle(Shape):
-    
     def __init__(self, size=5):
         """
         Create a new rectangle shape with default size. Default size is used
         to draw a square when the bounding box to draw around is too small.
         """
         self._size = size
-    
+
     def draw(self, canvas, bbox, style):
         x0l, y0l, x1l, y1l = bbox
-        xc, yc = (x1l + x0l)/2, (y1l + y0l)/2
-        
-        if x1l-x0l < self._size:
-            x0e = xc - self._size/2
-            x1e = xc + self._size/2
+        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
+
+        if x1l - x0l < self._size:
+            x0e = xc - self._size / 2
+            x1e = xc + self._size / 2
         else:
             x0e, x1e = x0l, x1l
-        
-        if y1l-y0l < self._size:
-            y0e = yc - self._size/2
-            y1e = yc + self._size/2
+
+        if y1l - y0l < self._size:
+            y0e = yc - self._size / 2
+            y1e = yc + self._size / 2
         else:
             y0e, y1e = y0l, y1l
-        
-        return canvas.create_rectangle((x0e, y0e, x1e, y1e),**style)
-    
+
+        return canvas.create_rectangle((x0e, y0e, x1e, y1e), **style)
+
     def intersection(self, bbox, end):
         xo0, yo0, xo1, yo1 = bbox
         xoc, yoc = (xo1 + xo0) / 2, (yo1 + yo0) / 2
         xec, yec = end
-        
+
         if xec != xoc:
             m = abs((yec - yoc) / (xec - xoc))
-            
+
             if m == 0:
                 dox = xo1 - xoc
                 doy = 0
@@ -139,7 +139,7 @@ class Rectangle(Shape):
         else:
             dox = 0
             doy = yo1 - yoc
-        
+
         return (xoc + dox if xec > xoc else xoc - dox,
                 yoc + doy if yec > yoc else yoc - doy)
 
@@ -160,7 +160,7 @@ class GraphElement:
     dictionaries. For example, to change the fill color of the element, set:
         style.selected.shape.fill = "yellow"
     """
-    
+
     def __init__(self, canvas, shape, label="", tooltip=None):
         """
         Create a graph element with shape, label and tooltip on canvas.
@@ -173,19 +173,19 @@ class GraphElement:
         self.shape = shape
         self._label = label
         self.tooltip = tooltip
-        
+
         # Keep track of handle and handle of labels in canvas
         self._handle = None
         self._labelhandle = None
-        
+
         # Styles
         self.style = AttrDict()
         self.style.common = deepcopy(element_style)
-        
+
         # Start as not selected
         self._selected = False
         self.style.selected = deepcopy(selected_element_style)
-    
+
     def handles(self):
         """Return the handles of this element."""
         handles = []
@@ -194,11 +194,11 @@ class GraphElement:
         if self._labelhandle is not None:
             handles.append(self._labelhandle)
         return tuple(handles)
-    
+
     def draw(self, x, y):
         self.delete()
         canvas = self._canvas
-        
+
         # Add label on canvas and store handle
         if self.label != "":
             self._labelhandle = canvas.create_text(x, y,
@@ -208,18 +208,18 @@ class GraphElement:
         else:
             self._labelhandle = None
             bbox = (x, y, x, y)
-        
+
         # Draw on canvas and store handle
-        self._handle = self.shape.draw(canvas, bbox, self.style.common.shape)            
-        
+        self._handle = self.shape.draw(canvas, bbox, self.style.common.shape)
+
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
-        
+
         if self.tooltip is not None:
             for handle in self.handles():
                 CanvasToolTip(canvas, handle, follow_mouse=1,
                               text=self.tooltip)
-    
+
     def move(self, dx, dy):
         """
         Move this vertex on canvas.
@@ -231,7 +231,7 @@ class GraphElement:
         canvas.move(self._handle, dx, dy)
         if self._labelhandle is not None:
             canvas.move(self._labelhandle, dx, dy)
-    
+
     def move_to(self, x, y):
         """
         Move this vertex to x,y on canvas
@@ -241,62 +241,63 @@ class GraphElement:
         dx = x - curx
         dy = y - cury
         self.move(dx, dy)
-        return (dx, dy)
-    
+        return dx, dy
+
     def delete(self):
         """Remove this element from canvas."""
         self._canvas.delete_element(self)
         self._handle = None
         self._labelhandle = None
-    
+
     def center(self):
         x0, y0, x1, y1 = self._canvas.coords(self._handle)
-        return ((x0 + x1) / 2, (y0 + y1) / 2)
-    
+        return (x0 + x1) / 2, (y0 + y1) / 2
+
     def bbox(self):
         return self._canvas.bbox(self._handle)
-    
+
     def dimensions(self):
         """Return this element width and height."""
         x0, y0, x1, y1 = self.bbox()
-        return x1-x0, y1-y0
-    
+        return x1 - x0, y1 - y0
+
     @property
     def label(self):
         return self._label
-    
+
     @label.setter
     def label(self, value):
         self._label = value
         self.draw(*self.center())
-    
+
     def select(self):
         self._selected = True
         self.refresh()
-    
+
     def deselect(self):
         self._selected = False
         self.refresh()
-    
+
     def refresh(self, style=None):
         """
         Refresh the appearance of this vertex on canvas.
         
-        style -- if not None, a dictionary defining the style for shape and text
+        style -- if not None, a dictionary defining the style for shape and
+                 text
                  if None, the common style of this element is used.
         """
         canvas = self._canvas
         if style is None:
             style = deepcopy(self.style.common)
-        
+
         if self._selected:
             style.shape.override(self.style.selected.shape)
             style.text.override(self.style.selected.text)
-        
+
         canvas.itemconfig(self._handle, style.shape)
         if self._labelhandle is not None:
             canvas.itemconfig(self._labelhandle, style.text)
-    
+
     def bind(self, event, callback, add=None):
         """
         Add an event binding to this element on canvas.
@@ -309,7 +310,7 @@ class GraphElement:
         """
         for handle in self.handles():
             self._canvas.tag_bind(handle, event, callback, add)
-    
+
     def unbind(self, event):
         """
         Remove all the bindings for event of the element on canvas.
@@ -334,14 +335,14 @@ class Vertex(GraphElement):
     style.common does not define a width, then the width will change when
     selecting the vertex, but will not change back when deselecting it.
     """
-    
+
     def __init__(self, canvas, label="", position=None, tooltip=None):
         """
         Create a vertex with label on canvas.
         """
         super(Vertex, self).__init__(canvas, shape=Oval(), label=label,
-                                             tooltip=tooltip)
-        
+                                     tooltip=tooltip)
+
         self._canvas.add_vertex(self, position)
 
 
@@ -352,7 +353,7 @@ class Edge(GraphElement):
     In addition to the common style of graph elements, edges define the
     style.common.arrow dictionary for the arrow of the edge.
     """
-    
+
     def __init__(self, canvas, origin, end, label="", position=None,
                  tooltip=None):
         """
@@ -360,34 +361,34 @@ class Edge(GraphElement):
         edge between origin and end.
         """
         super(Edge, self).__init__(canvas, shape=Rectangle(), label=label,
-                                           tooltip=tooltip)
+                                   tooltip=tooltip)
         self.origin = origin
         self.end = end
         self._arrowhandle = None
-        
+
         # Common style
         self.style.common.arrow = AttrDict()
         self.style.common.arrow.arrow = "last"
-        
+
         # Position
         if position is None:
             xo, yo = origin.center()
             xe, ye = end.center()
             position = ((xo + xe) / 2, (yo + ye) / 2)
-        
+
         self._canvas.add_edge(self, position)
-    
+
     def handles(self):
         if self._arrowhandle is not None:
             return super(Edge, self).handles() + (self._arrowhandle,)
         else:
             return super(Edge, self).handles()
-    
+
     def delete(self):
         """Remove this edge from canvas."""
         super(Edge, self).delete()
         self._arrowhandle = None
-    
+
     def refresh_arrows(self):
         canvas = self._canvas
         if self._arrowhandle is not None:
@@ -404,17 +405,16 @@ class Edge(GraphElement):
         canvas.tag_raise(self._handle)
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
-    
+
     def draw(self, x, y):
         super(Edge, self).draw(x, y)
         self.refresh_arrows()
-    
+
     def move(self, dx, dy):
         super(Edge, self).move(dx, dy)
         # Redraw arrow
         self.refresh_arrows()
-    
-    def refresh(self):
-        super(Edge, self).refresh()
+
+    def refresh(self, style=None):
+        super(Edge, self).refresh(style=style)
         self._canvas.itemconfig(self._arrowhandle, self.style.common.arrow)
-        

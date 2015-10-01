@@ -1,8 +1,9 @@
 import math
 
+
 class Layout:
     """A graph layout."""
-    
+
     def apply(self, canvas, positions, edges):
         """
         Apply this layout on canvas, with positions of elements.
@@ -15,20 +16,18 @@ class Layout:
         raise NotImplementedError("Should be implemented by subclasses.")
 
 
-
 class OneStepForceBasedLayout(Layout):
     """
     A force-based layout. Applying only cause one step of the computation
     of the layout. Useful for interactive layouting, each application
     giving the new positions to draw.
     """
-    
+
     def __init__(self):
         self.minSpringLength = 30
         self.springStiffness = 0.3
         self.electricalRepulsion = 250
         self.maxForce = 10
-
 
     def _distance_vector_from(self, positions, vertex, other):
         """
@@ -45,19 +44,21 @@ class OneStepForceBasedLayout(Layout):
         ______/             |
                             |
         """
-    
+
         xvc, yvc = positions[vertex]
         vw, vh = vertex.dimensions()
         xoc, yoc = positions[other]
         ow, oh = other.dimensions()
-    
-        xv0, yv0, xv1, yv1 = (xvc - vw/2, yvc - vh/2, xvc + vw/2, yvc + vh/2)
-        xo0, yo0, xo1, yo1 = (xoc - ow/2, yoc - oh/2, xoc + ow/2, yoc + oh/2)
-        
+
+        xv0, yv0, xv1, yv1 = (
+            xvc - vw / 2, yvc - vh / 2, xvc + vw / 2, yvc + vh / 2)
+        xo0, yo0, xo1, yo1 = (
+            xoc - ow / 2, yoc - oh / 2, xoc + ow / 2, yoc + oh / 2)
+
         xvi, yvi = vertex.shape.intersection((xv0, yv0, xv1, yv1), (xoc, yoc))
         xoi, yoi = other.shape.intersection((xo0, yo0, xo1, yo1), (xvc, yvc))
-        
-        return (xvi, yvi, xoi, yoi)
+
+        return xvi, yvi, xoi, yoi
 
     def _hooke_attraction(self, positions, vertex, other):
         """
@@ -71,24 +72,24 @@ class OneStepForceBasedLayout(Layout):
         """
         dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
-    
+
         # Use center to check when vertices overlap
         vcx, vcy = positions[vertex]
         ocx, ocy = positions[other]
-    
+
         # Overlap: when overlapping, ignore the force
         if (ocx - vcx) * (dx1 - dx0) < 0 or (ocy - vcy) * (dy1 - dy0) < 0:
             return 0, 0
-    
+
         dx, dy = dx1 - dx0, dy1 - dy0
-    
-        distance = math.sqrt(dx*dx + dy*dy)
-    
+
+        distance = math.sqrt(dx * dx + dy * dy)
+
         # Spring length is sum of radiuses of vertices
         dcx, dcy = ocx - vcx, ocy - vcy
-        length = math.sqrt(dcx*dcx + dcy*dcy) - distance
+        length = math.sqrt(dcx * dcx + dcy * dcy) - distance
         length = max(length, self.minSpringLength)
-        
+
         if distance == 0:
             force = -self.maxForce
         else:
@@ -96,7 +97,7 @@ class OneStepForceBasedLayout(Layout):
         force = max(min(force, self.maxForce), -self.maxForce)
         fx = force * dx
         fy = force * dy
-    
+
         return fx, fy
 
     def _coulomb_repulsion(self, positions, vertex, other):
@@ -110,29 +111,29 @@ class OneStepForceBasedLayout(Layout):
         """
         dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
-    
+
         # Use center to check when vertices overlap
         vcx, vcy = positions[vertex]
         ocx, ocy = positions[other]
-    
+
         # Overlap: when overlapping inverse bounding box
         if (ocx - vcx) * (dx1 - dx0) < 0:
             dx0, dx1 = dx1, dx0
         if (ocy - vcy) * (dy1 - dy0) < 0:
             dy0, dy1 = dy1, dy0
-    
+
         dx, dy = dx1 - dx0, dy1 - dy0
-    
-        distance = math.sqrt(dx*dx + dy*dy)
-    
+
+        distance = math.sqrt(dx * dx + dy * dy)
+
         if distance == 0:
             force = -self.maxForce
         else:
-            force = -self.electricalRepulsion / (distance*distance)
+            force = -self.electricalRepulsion / (distance * distance)
         force = max(min(force, self.maxForce), -self.maxForce)
         fx = force * dx
         fy = force * dy
-    
+
         return fx, fy
 
     def apply(self, positions, edges, fixed=None):
@@ -147,12 +148,12 @@ class OneStepForceBasedLayout(Layout):
         """
         if fixed is None:
             fixed = set()
-    
+
         forces = {}
         # Compute forces
         for vertex in positions:
             fx, fy = 0, 0
-        
+
             # Repulsion forces
             for v in positions:
                 if vertex != v:
@@ -160,7 +161,7 @@ class OneStepForceBasedLayout(Layout):
                                                        vertex, v)
                     fx += cfx
                     fy += cfy
-        
+
             # Spring forces
             for origin, end in edges:
                 if origin == vertex or end == vertex:
@@ -168,46 +169,45 @@ class OneStepForceBasedLayout(Layout):
                         other = end
                     else:
                         other = origin
-                
+
                     # Avoid computing the force for self-loop
                     if origin != end:
                         hfx, hfy = self._hooke_attraction(positions,
                                                           vertex, other)
                         fx += hfx
                         fy += hfy
-        
+
             forces[vertex] = fx, fy
-                
+
         # Compute new positions
-        newPositions = {}
-        sumForces = 0
+        new_positions = {}
+        sum_forces = 0
         for vertex in positions:
             fx, fy = forces[vertex]
             x, y = positions[vertex]
             nx = x + fx
             ny = y + fy
-            sumForces += math.sqrt(fx*fx + fy*fy)
-        
-            if vertex not in fixed:
-                newPositions[vertex] = nx, ny
-            else:
-                newPositions[vertex] = x, y
-    
-        return (newPositions, sumForces/len(newPositions) 
-                              if len(newPositions) > 0 else 0)
+            sum_forces += math.sqrt(fx * fx + fy * fy)
 
+            if vertex not in fixed:
+                new_positions[vertex] = nx, ny
+            else:
+                new_positions[vertex] = x, y
+
+        return (new_positions, sum_forces / len(new_positions)
+                if len(new_positions) > 0 else 0)
 
 
 class ForceBasedLayout(OneStepForceBasedLayout):
     """
     A force-based layout. One application gives the final positions.
     """
-    
+
     def __init__(self):
         super().__init__()
         self.iterationNumber = 100
         self.forceThreshold = 0.001
-    
+
     def apply(self, vertices, edges, fixed=None):
         """
         Return the new positions of vertices,
@@ -235,11 +235,12 @@ try:
 except ImportError:
     pydot = None
 
+
 class DotLayout:
     """
     A layout using fdp (part of graphviz library) to layout the graph.
     """
-    
+
     def apply(self, vertices, edges):
         """
         Call fdp, ignoring positions given in vertices, and return the new
@@ -247,10 +248,10 @@ class DotLayout:
         
         The ends of all edges must belong to vertices.
         """
-        
+
         if pydot is None:
             raise ImportError("Cannot use dot layout, pydot is not installed.")
-        
+
         # ----- CREATE DOT GRAPH -----
         # Mark all states
         ids = {}
@@ -258,30 +259,30 @@ class DotLayout:
         for v in vertices:
             ids[v] = "s" + str(curid)
             curid += 1
-                
+
         dot = "digraph {"
-        
+
         # Add states to the dot representation
         for v in ids:
             dot += (ids[v] + " " + "[label=\"" + v.label + "\"]" + ";\n")
-        
+
         # For each state, add each transition to the representation
         for origin, end in edges:
             dot += (ids[origin] + "->" + ids[end] + ";\n")
-        
+
         dot += "}"
-        
+
         # dot contains the dot representation of vertices and edges
-        
+
         # ----- COMPUTE VERTICES POSITIONS -----
         graph = pydot.graph_from_dot_data(dot)
         graph = pydot.graph_from_dot_data(graph.create_dot(prog="fdp"))
-        
-        newPositions = {}
+
+        new_positions = {}
         for vertex in vertices:
             pos = graph.get_node(ids[vertex])[0].get("pos")
             pos = pos[1:-1]
             pos = pos.split(',')
-            newPositions[vertex] = int(float(pos[0])), int(float(pos[1]))
-        
-        return newPositions
+            new_positions[vertex] = int(float(pos[0])), int(float(pos[1]))
+
+        return new_positions
