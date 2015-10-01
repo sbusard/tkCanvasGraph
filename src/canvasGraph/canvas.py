@@ -271,20 +271,20 @@ TEST3=TEST3""")
                     break
     
     
-    def bind(self, event, func, add=None):
-        def newfunc(event):
-            if self.event_handled:
-                self.event_handled = False
-            else:
-                return func(event)
-        super(CanvasGraph, self).bind(event, newfunc, add)
+    #def bind(self, event, func, add=None):
+    #    def newfunc(event):
+    #        if self.event_handled:
+    #            self.event_handled = False
+    #        else:
+    #            return func(event)
+    #    super(CanvasGraph, self).bind(event, newfunc, add)
         
     
-    def tag_bind(self, item, event, func, add=None):
-        def newfunc(event):
-            if func(event) == "break":
-                self.event_handled = True
-        super(CanvasGraph, self).tag_bind(item, event, newfunc, add)
+    #def tag_bind(self, item, event, func, add=None):
+    #    def newfunc(event):
+    #        if func(event) == "break":
+    #            self.event_handled = True
+    #    super(CanvasGraph, self).tag_bind(item, event, newfunc, add)
 
 
 class CanvasFrame(tk.Frame):
