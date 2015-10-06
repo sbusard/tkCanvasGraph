@@ -14,8 +14,8 @@ if __name__ == "__main__":
     frame.pack(fill="both", expand=True)
 
     # Add creating mouse to the canvas
-    cm = CreatingMouse(frame.canvas, frame.canvas.vertices,
-                       button="1", modifier="Control")
+    cm = CreatingMouse(frame.canvas.vertices)
+    frame.canvas.register_mouse(cm, "1", "Control")
 
     # TODO Remove this (tests) -----------------------------------------------
     # One step of force-based layout

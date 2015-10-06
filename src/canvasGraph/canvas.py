@@ -218,19 +218,19 @@ class CanvasGraph(tk.Canvas):
     def _pressed(self, button, modifier, event):
         if (button, modifier) in self.mouses:
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.pressed(event):
+                if not mouse.pressed(self, event):
                     break
 
     def _moved(self, button, modifier, event):
         if (button, modifier) in self.mouses:
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.moved(event):
+                if not mouse.moved(self, event):
                     break
 
     def _released(self, button, modifier, event):
         if (button, modifier) in self.mouses:
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.released(event):
+                if not mouse.released(self, event):
                     break
 
     # def bind(self, event, func, add=None):
@@ -327,14 +327,12 @@ class CanvasFrame(tk.Frame):
         self.canvas.bind("<MouseWheel>", on_mousewheel)
 
         # Mouses for the canvas
-        sm = SelectingMouse(self.canvas,
-                            selection=self.canvas.selected,
-                            elements=self.canvas.elements.values(),
-                            button="1", modifier="")
-        smm = SelectionModifyingMouse(self.canvas,
-                                      selection=self.canvas.selected,
-                                      elements=self.canvas.elements.values(),
-                                      button="1", modifier="Shift")
-        mm = MovingMouse(self.canvas, self.canvas.selected,
-                         button="1", modifier="")
+        sm = SelectingMouse(selection=self.canvas.selected,
+                            elements=self.canvas.elements.values())
+        smm = SelectionModifyingMouse(selection=self.canvas.selected,
+                                      elements=self.canvas.elements.values())
+        mm = MovingMouse(self.canvas.selected)
+        self.canvas.register_mouse(sm, "1", "")
+        self.canvas.register_mouse(smm, "1", "Shift")
+        self.canvas.register_mouse(mm, "1", "")
         self.mouses = [sm, smm, mm]

@@ -1,37 +1,48 @@
 from .graph import Vertex, Edge
 
 
-class Mouse:
+class Mouse(object):
     """
     A generic mouse doing nothing.
+
+    Mouses can be registered to canvas. Three events are handled by mouses:
+        * pressed button
+        * moved pointer
+        * released button
+    Whenever such an event occurs, the canvas delegates it to the registered
+    mouses.
     """
 
-    def __init__(self, canvas, button, modifier):
-        """
-        Register this mouse to the canvas, for button pressed, moved and
-        released events under modifier.
-        """
-        self.canvas = canvas
-        # Register to the canvas
-        self.canvas.register_mouse(self, button, modifier)
-        self.button = button
-        self.modifier = modifier
-
-    def pressed(self, event):
+    def pressed(self, canvas, event):
         """
         React to mouse button pressed.
+
+        :param canvas: the canvas on which the event occurred;
+        :param event: the tkinter event of the pressed button.
+        :return: a True value if the event must be passed to the next mouse,
+                 a False value otherwise.
         """
         return True  # Do nothing, pass the hand
 
-    def moved(self, event):
+    def moved(self, canvas, event):
         """
         React to mouse moved.
+
+        :param canvas: the canvas on which the event occurred;
+        :param event: the tkinter event of the moved mouse.
+        :return: a True value if the event must be passed to the next mouse,
+                 a False value otherwise.
         """
         return True  # Do nothing, pass the hand
 
-    def released(self, event):
+    def released(self, canvas, event):
         """
         React to mouse button released.
+
+        :param canvas: the canvas on which the event occurred;
+        :param event: the tkinter event of the released button.
+        :return: a True value if the event must be passed to the next mouse,
+                 a False value otherwise.
         """
         return True  # Do nothing, pass the hand
 
@@ -45,30 +56,26 @@ class SelectingMouse(Mouse):
         * select several elements by drawing a box around them.
     """
 
-    def __init__(self, canvas, selection=None, elements=None, button="1",
-                 modifier=""):
+    def __init__(self, selection=None, elements=None):
         """
-        canvas -- the canvas on which operate;
-        selection -- the set in which keeping track of selected elements.
-                     if None, use an internal set;
-        elements -- the set of selectable elements.
-                    if None, any element is selectable;
-        button -- the button on which react;
-        modifier -- the modifier for mouse events.
-        """
-        super().__init__(canvas, button, modifier)
+        Create a new selecting mouse.
 
+        :param selection: the set in which keeping track of selected elements.
+                          if None, use an internal set;
+        :param elements: the set of selectable elements.
+                         if None, any element is selectable.
+        """
         self.selected = set() if selection is None else selection
         self.elements = elements
 
         self.selecting = None
         self.selection = None
 
-        self.mousemoved = False
+        self.mouse_moved = False
 
-    def pressed(self, event):
-        element = self.canvas.current_element()
-        self.mousemoved = False
+    def pressed(self, canvas, event):
+        element = canvas.current_element()
+        self.mouse_moved = False
 
         # if element exists,
         #   if element is in elements and not selected,
@@ -86,49 +93,48 @@ class SelectingMouse(Mouse):
             return True
         else:
             self.selected.clear()
-            self.selecting = (self.canvas.canvasx(event.x),
-                              self.canvas.canvasy(event.y))
-            self.selection = self.canvas.create_rectangle(self.selecting +
-                                                          self.selecting,
-                                                          outline="gray")
+            self.selecting = (canvas.canvasx(event.x),
+                              canvas.canvasy(event.y))
+            self.selection = canvas.create_rectangle(self.selecting +
+                                                     self.selecting,
+                                                     outline="gray")
             return False
 
-    def moved(self, event):
-        self.mousemoved = True
+    def moved(self, canvas, event):
+        self.mouse_moved = True
         if self.selecting is None:
             return True
         else:
-            self.canvas.coords(self.selection,
-                               self.canvas.canvasx(event.x),
-                               self.canvas.canvasy(event.y),
-                               *self.selecting)
+            canvas.coords(self.selection,
+                          canvas.canvasx(event.x),
+                          canvas.canvasy(event.y),
+                          *self.selecting)
             return False
 
-    def released(self, event):
-        if self.mousemoved:
-            self.mousemoved = False
+    def released(self, canvas, event):
+        if self.mouse_moved:
+            self.mouse_moved = False
             if self.selecting is None:
                 return True
             else:
                 self.selected.clear()
-                for e in self.canvas.find_enclosed(
-                        *self.canvas.coords(self.selection)):
-                    e = self.canvas.element_by_handle(e)
+                for e in canvas.find_enclosed(*canvas.coords(self.selection)):
+                    e = canvas.element_by_handle(e)
                     if self.elements is None or e in self.elements:
                         self.selected.add(e)
                 self.selecting = None
-                self.canvas.delete(self.selection)
+                canvas.delete(self.selection)
                 self.selection = None
                 return False
         else:
-            element = self.canvas.current_element()
+            element = canvas.current_element()
             if self.elements is None or element in self.elements:
                 self.selected.clear()
                 self.selected.add(element)
-            self.mousemoved = False
+            self.mouse_moved = False
             if self.selecting is not None:
                 self.selecting = None
-                self.canvas.delete(self.selection)
+                canvas.delete(self.selection)
                 self.selection = None
             return False
 
@@ -141,24 +147,20 @@ class SelectionModifyingMouse(Mouse):
     are clicked.
     """
 
-    def __init__(self, canvas, selection=None, elements=None,
-                 button="1", modifier=""):
+    def __init__(self, selection=None, elements=None):
         """
-        canvas -- the canvas on which operate;
-        selection -- the set in which keeping track of selected elements.
-                     if None, use an internal set;
-        elements -- the set of selectable elements.
-                    if None, any element is selectable;
-        button -- the button on which react;
-        modifier -- the modifier for mouse events.
-        """
-        super().__init__(canvas, button, modifier)
+        Create a new selection modifying mouse.
 
+        :param selection: the set in which keeping track of selected elements.
+                          if None, use an internal set;
+        :param elements: the set of selectable elements.
+                         if None, any element is selectable.
+        """
         self.selected = set() if selection is None else selection
         self.elements = elements
 
-    def pressed(self, event):
-        element = self.canvas.current_element()
+    def pressed(self, canvas, event):
+        element = canvas.current_element()
 
         if element in self.selected:
             self.selected.remove(element)
@@ -179,42 +181,40 @@ class MovingMouse(Mouse):
     The added behaviour is moving the selection when dragged.
     """
 
-    def __init__(self, canvas, selected, button="1", modifier=""):
+    def __init__(self, selected):
         """
-        canvas -- the canvas on which operate;
-        selected -- the set of selected element;
-        button -- the button on which react;
-        modifier -- the modifier for mouse events.
+        Create a new moving mouse.
+
+        :param selected: the set of selected element.
         """
-        super().__init__(canvas, button, modifier)
         self.selected = selected
         self.moving = False
         self.position = None
 
-    def pressed(self, event):
-        element = self.canvas.current_element()
+    def pressed(self, canvas, event):
+        element = canvas.current_element()
 
         # if element is in selection, start moving
         if element is not None and element in self.selected:
             self.moving = True
-            self.position = (self.canvas.canvasx(event.x),
-                             self.canvas.canvasy(event.y))
+            self.position = (canvas.canvasx(event.x),
+                             canvas.canvasy(event.y))
             return False
         else:
             return True
 
-    def moved(self, event):
+    def moved(self, canvas, event):
         if self.moving:
-            x = self.canvas.canvasx(event.x)
-            y = self.canvas.canvasy(event.y)
+            x = canvas.canvasx(event.x)
+            y = canvas.canvasy(event.y)
             dx, dy = x - self.position[0], y - self.position[1]
-            self.canvas.move_elements(self.selected, dx, dy)
+            canvas.move_elements(self.selected, dx, dy)
             self.position = x, y
             return False
         else:
             return True
 
-    def released(self, event):
+    def released(self, canvas, event):
         if self.moving:
             self.moving = False
             self.position = None
@@ -233,19 +233,17 @@ class CreatingMouse(Mouse):
           from one vertex to another.
     """
 
-    def __init__(self, canvas, vertices, button="1", modifier=""):
+    def __init__(self, vertices):
         """
-        canvas -- the canvas on which operate;
-        vertices -- the set of vertices of the canvas;
-        button -- the button on which react;
-        modifier -- the modifier for mouse events.
+        Create a new creating mouse.
+
+        :param vertices: the set of vertices of the canvas.
         """
-        super().__init__(canvas, button, modifier)
         self.vertices = vertices
         self.starting = None
 
-    def pressed(self, event):
-        element = self.canvas.current_element()
+    def pressed(self, canvas, event):
+        element = canvas.current_element()
 
         # if element exists and is a vertex,
         #   start to build an edge
@@ -256,20 +254,20 @@ class CreatingMouse(Mouse):
             self.starting = element
             return False
         else:
-            x = self.canvas.canvasx(event.x)
-            y = self.canvas.canvasy(event.y)
-            Vertex(self.canvas, position=(x, y))
+            x = canvas.canvasx(event.x)
+            y = canvas.canvasy(event.y)
+            Vertex(canvas, position=(x, y))
             return False
 
-    def moved(self, event):
+    def moved(self, canvas, event):
         if self.starting is not None:
             return False
         else:
             return True
 
-    def released(self, event):
+    def released(self, canvas, event):
         if self.starting is not None:
-            element = self.canvas.current_element()
+            element = canvas.current_element()
 
             # if element exists, is a vertex and is not starting,
             #   add an edge 
@@ -277,7 +275,7 @@ class CreatingMouse(Mouse):
             #   do nothing
 
             if element is not None and element in self.vertices:
-                Edge(self.canvas, self.starting, element)
+                Edge(canvas, self.starting, element)
                 self.starting = None
                 return False
             else:
