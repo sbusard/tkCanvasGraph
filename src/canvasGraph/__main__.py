@@ -5,8 +5,8 @@ from .mouse import CreatingMouse
 from .layout import OneStepForceBasedLayout
 from .graph import Vertex, Edge
 
-# Start a new window with canvas graph and creating mouse
 if __name__ == "__main__":
+    # Start a new window with canvas graph and creating mouse
     root = tk.Tk()
 
     frame = CanvasFrame(root)
@@ -24,19 +24,24 @@ if __name__ == "__main__":
                       frame.canvas.layout(OneStepForceBasedLayout()))
 
     # Random adding
-    def addv(_):
+    def add_vertex(_):
         v = Vertex(frame.canvas,
                    str(random.randint(0, 100)) + "\n" +
-                   "\n".join(("TEST1=TEST1", "TEST2=TEST2", "TEST3=TEST3""")))
+                   "\n".join("TEST" +
+                             str(random.randint(0, 100)) +
+                             "=" +
+                             "TEST" +
+                             str(random.randint(0, 100))
+                             for _ in range(3)))
         v.style.common.shape.width = 2
         v.style.selected.shape.outline = "red"
         v.refresh()
 
 
-    frame.canvas.bind("j", addv)
+    frame.canvas.bind("j", add_vertex)
 
 
-    def adde(event):
+    def add_edge(_):
         pairs = [(o, e)
                  for o in frame.canvas.vertices
                  for e in frame.canvas.vertices
@@ -48,7 +53,7 @@ if __name__ == "__main__":
             Edge(frame.canvas, o, e, label=str(random.randint(0, 100)))
 
 
-    frame.canvas.bind("k", adde)
+    frame.canvas.bind("k", add_edge)
     # -------------------------------------------------------------------------
 
     root.mainloop()
