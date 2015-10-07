@@ -1,5 +1,14 @@
 import math
 
+"""
+Layouts.
+
+This module provides layouts to organize a graph on a canvas. In addition to
+the abstract layout class, this module provides several pre-defined layouts.
+"""
+
+__all__ = ["Layout", "OneStepForceBasedLayout", "ForceBasedLayout",
+           "DotLayout"]
 
 class Layout:
     """

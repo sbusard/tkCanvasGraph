@@ -1,5 +1,17 @@
 from .graph import Vertex, Edge
 
+"""
+Mouses.
+
+Mouses handle pressing and releasing a button, with access to the canvas and
+its elements, as well as moving the pointer on the canvas.
+
+In addition to the abstract mouse that does nothing, this module gives access
+to several pre-defined mouses.
+"""
+
+__all__ = ["Mouse", "SelectingMouse", "SelectionModifyingMouse", "MovingMouse",
+           "CreatingMouse"]
 
 class Mouse(object):
     """
