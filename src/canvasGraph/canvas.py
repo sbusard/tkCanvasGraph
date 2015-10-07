@@ -30,6 +30,9 @@ class CanvasGraph(tk.Canvas):
 
         self.focus_set()
 
+        self.layouting = tk.BooleanVar()
+        self.layouting.set(False)
+
     def layout(self, layout):
         self.layouting.set(False)
         vertices = {element: element.center()
@@ -277,8 +280,6 @@ class CanvasFrame(tk.Frame):
 
         # Interactive layout
         osfbl = OneStepForceBasedLayout()
-        self.canvas.layouting = tk.BooleanVar()
-        self.canvas.layouting.set(False)
         self.canvas.layouting.trace("w",
                                     lambda *args:
                                     self.canvas.interactive_layout(osfbl))
