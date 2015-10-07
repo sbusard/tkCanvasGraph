@@ -291,8 +291,8 @@ class GraphElement:
             style = deepcopy(self.style.common)
 
         if self._selected:
-            style.shape.override(self.style.selected.shape)
-            style.text.override(self.style.selected.text)
+            style.shape.update(self.style.selected.shape)
+            style.text.update(self.style.selected.text)
 
         canvas.itemconfig(self._handle, style.shape)
         if self._labelhandle is not None:
