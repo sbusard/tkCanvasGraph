@@ -38,12 +38,8 @@ class CanvasGraph(tk.Canvas):
         for edge in self.edges:
             edges.add((edge.origin, edge))
             edges.add((edge, edge.end))
-        np = layout.apply(vertices, edges)
-
-        try:
-            self.apply_positions(np[0])
-        except KeyError:
-            self.apply_positions(np)
+        np = layout.apply(self, vertices, edges)
+        self.apply_positions(np)
 
     def apply_positions(self, positions):
         """
@@ -69,7 +65,7 @@ class CanvasGraph(tk.Canvas):
                 edges.add((edge.origin, edge))
                 edges.add((edge, edge.end))
 
-            np, sf = layout.apply(vertices, edges, fixed=self.selected)
+            np = layout.apply(self, vertices, edges, fixed=self.selected)
 
             self.apply_positions(np)
 

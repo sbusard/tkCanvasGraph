@@ -2,16 +2,19 @@ import math
 
 
 class Layout:
-    """A graph layout."""
+    """
+    A graph layout.
+    """
 
-    def apply(self, canvas, positions, edges):
+    def apply(self, canvas, positions, edges, fixed=None):
         """
         Apply this layout on canvas, with positions of elements.
-        Return a dictionary of new positions for elements of "positions".
         
-        canvas -- the canvas on which operate;
-        positions -- a dictionary of elements -> x,y positions;
-        edges -- a list of couples representing the edges.
+        :param canvas: the canvas on which operate;
+        :param positions: a dictionary of elements -> x,y positions;
+        :param edges: a list of couples representing the edges;
+        :param fixed: a set of elements that must remain at given position.
+        :return: a dictionary of new positions for elements of positions.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
@@ -19,7 +22,7 @@ class Layout:
 class OneStepForceBasedLayout(Layout):
     """
     A force-based layout. Applying only cause one step of the computation
-    of the layout. Useful for interactive layouting, each application
+    of the layout. Useful for interactive layout, each application
     giving the new positions to draw.
     """
 
@@ -34,6 +37,11 @@ class OneStepForceBasedLayout(Layout):
         Return the distance vector from vertex to the other vertex.
         If vertex is at greater position than other,
         the distance vector is negative.
+
+        :param positions: the positions of all vertices;
+        :param vertex: a vertex of positions;
+        :param other: another vertex of positions.
+        :return the distance vector between vertex and other.
     
         Warning: if vertices overlap, the vector is directed towards vertex.
     
@@ -64,11 +72,13 @@ class OneStepForceBasedLayout(Layout):
         """
         Return the force produced by the spring between vertex and other,
         applied on vertex.
-        
-        positions -- the positions of the vertices
-                     (a vertex -> x,y position dictionary);
-        vertex -- a vertex;
-        other -- another vertex.
+
+        :param positions: the positions of the vertices
+                          (a vertex -> x,y position dictionary);
+        :param vertex: a vertex of positions;
+        :param other: another vertex of positions.
+        :return the force vector produced by the spring between vertex and
+                other, applied on vertex.
         """
         dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
@@ -104,10 +114,11 @@ class OneStepForceBasedLayout(Layout):
         """
         Return the electrical force produced by the other vertex on vertex.
         
-        positions -- the positions of the vertices
-                     (a vertex -> x,y position dictionary);
-        vertex -- a vertex;
-        other -- another vertex.
+        :param positions: the positions of the vertices
+                          (a vertex -> x,y position dictionary);
+        :param vertex: a vertex of positions;
+        :param other: another vertex of positions.
+        :return: the electrical force vector produced by other on vertex.
         """
         dx0, dy0, dx1, dy1 = self._distance_vector_from(positions,
                                                         vertex, other)
@@ -136,15 +147,18 @@ class OneStepForceBasedLayout(Layout):
 
         return fx, fy
 
-    def apply(self, positions, edges, fixed=None):
+    def _apply_and_get_force(self, canvas, positions, edges, fixed=None):
         """
-        Return the new positions of vertices in positions,
-        given edges between them.
-        If fixed is not None, only vertices out of fixed are moved.
-        
-        positions -- a dictionary of vertex -> x,y coordinates values;
-        edges -- a set of edges between vertices of positions;
-        fixed -- a set of vertices.
+        Apply this layout on positions and edges, keeping fixed elements in
+        place, and return the new positions as well as the average force on
+        each element.
+
+        :param canvas: the canvas on which operate;
+        :param positions: a dictionary of elements -> x,y positions;
+        :param edges: a list of couples representing the edges;
+        :param fixed: a set of elements that must remain at given position.
+        :return: a dictionary of new positions for elements of positions
+                 and the average force applied on each element.
         """
         if fixed is None:
             fixed = set()
@@ -194,8 +208,16 @@ class OneStepForceBasedLayout(Layout):
             else:
                 new_positions[vertex] = x, y
 
-        return (new_positions, sum_forces / len(new_positions)
+        return (new_positions,
+                sum_forces / len(new_positions)
                 if len(new_positions) > 0 else 0)
+
+    def apply(self, canvas, positions, edges, fixed=None):
+        np, _ = self._apply_and_get_force(canvas,
+                                          positions,
+                                          edges,
+                                          fixed=fixed)
+        return np
 
 
 class ForceBasedLayout(OneStepForceBasedLayout):
@@ -208,23 +230,13 @@ class ForceBasedLayout(OneStepForceBasedLayout):
         self.iterationNumber = 100
         self.forceThreshold = 0.001
 
-    def apply(self, vertices, edges, fixed=None):
-        """
-        Return the new positions of vertices,
-        given their initial positions and their connected edges.
-        Return a dictionary of vertices -> positions pairs, with new positions 
-        of the vertices.
-        If fixed is not None, only vertices out of fixed are moved.
-        
-        vertices -- a dictionary of vertices -> position pairs, where positions
-                    are couples of x,y coordinates
-        edges    -- a set of couples (v1, v2)
-                    where v1 and v2 belong to vertices;
-        fixed    -- a set of vertices.
-        """
+    def apply(self, canvas, vertices, edges, fixed=None):
         np = vertices
         for i in range(self.iterationNumber):
-            np, sf = super().apply(np, edges, fixed=fixed)
+            np, sf = super()._apply_and_get_force(canvas,
+                                                  np,
+                                                  edges,
+                                                  fixed=fixed)
             if sf < self.forceThreshold:
                 break
         return np
@@ -241,14 +253,7 @@ class DotLayout:
     A layout using fdp (part of graphviz library) to layout the graph.
     """
 
-    def apply(self, vertices, edges):
-        """
-        Call fdp, ignoring positions given in vertices, and return the new
-        positions of vertices of the graph composed of vertices and edges.
-        
-        The ends of all edges must belong to vertices.
-        """
-
+    def apply(self, canvas, vertices, edges, fixed=None):
         if pydot is None:
             raise ImportError("Cannot use dot layout, pydot is not installed.")
 
