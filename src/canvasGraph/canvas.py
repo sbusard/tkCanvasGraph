@@ -6,19 +6,13 @@ from .mouse import (SelectingMouse, SelectionModifyingMouse,
                     MovingMouse)
 from .layout import ForceBasedLayout, OneStepForceBasedLayout, DotLayout
 
-# Padding for scroll region
-PADDING = 10
-
 
 class CanvasGraph(tk.Canvas):
+    """
+    A canvas graph is a TK canvas on which you can display graphs.
+    """
     def __init__(self, parent, **config):
         super(CanvasGraph, self).__init__(parent, **config)
-
-        self.event_handled = False
-
-        # Selected vertices
-        self.selected = ObservableSet()
-        self.selected.register(self)
 
         self.elements = {}
         self.vertices = set()
@@ -68,7 +62,7 @@ class CanvasGraph(tk.Canvas):
                 edges.add((edge.origin, edge))
                 edges.add((edge, edge.end))
 
-            np = layout.apply(self, vertices, edges, fixed=self.selected)
+            np = layout.apply(self, vertices, edges)
 
             self.apply_positions(np)
 
@@ -146,8 +140,7 @@ class CanvasGraph(tk.Canvas):
         for handle in element.handles():
             self.delete_handle(handle)
 
-        # Discard from other sets (such as selected)
-        self.selected.discard(element)
+        # Discard from other sets
         self.vertices.discard(element)
         self.edges.discard(element)
 
@@ -168,15 +161,9 @@ class CanvasGraph(tk.Canvas):
         # Update scrollregion
         self.update_scrollregion()
 
-    def update(self, observed):
-        if observed is self.selected:
-            for e in self.elements.values():
-                if e in self.selected:
-                    e.select()
-                else:
-                    e.deselect()
-
     def update_scrollregion(self):
+        # Padding for scroll region
+        PADDING = 10
         bbox = self.bbox("all")
         if bbox is not None:
             minx, miny, maxx, maxy = bbox
@@ -232,19 +219,62 @@ class CanvasGraph(tk.Canvas):
                 if not mouse.released(self, event):
                     break
 
-    # def bind(self, event, func, add=None):
-    #     def newfunc(event):
-    #         if self.event_handled:
-    #             self.event_handled = False
-    #         else:
-    #             return func(event)
-    #     super(CanvasGraph, self).bind(event, newfunc, add)
 
-    # def tag_bind(self, item, event, func, add=None):
-    #    def newfunc(event):
-    #        if func(event) == "break":
-    #            self.event_handled = True
-    #    super(CanvasGraph, self).tag_bind(item, event, newfunc, add)
+class InteractiveCanvasGraph(CanvasGraph):
+    """
+    A selectable canvas graph is a TK canvas on which you can display graphs.
+    In addition, such a canvas graph embeds the necessary mouses to select
+    and move around elements of the displayed graph.
+    """
+    def __init__(self, parent, **config):
+        super(InteractiveCanvasGraph, self).__init__(parent, **config)
+        # Selected vertices
+        self.selected = ObservableSet()
+        self.selected.register(self)
+
+        # Mouses for the canvas
+        sm = SelectingMouse(selection=self.selected,
+                            elements=self.elements.values())
+        smm = SelectionModifyingMouse(selection=self.selected,
+                                      elements=self.elements.values())
+        mm = MovingMouse(self.selected)
+        self.register_mouse(sm, "1", "")
+        self.register_mouse(smm, "1", "Shift")
+        self.register_mouse(mm, "1", "")
+
+    def interactive_layout(self, layout):
+        def iter_layout():
+            if not self.layouting.get():
+                return
+
+            vertices = {element: element.center()
+                        for element in self.elements.values()}
+            edges = set()
+            for edge in self.edges:
+                edges.add((edge.origin, edge))
+                edges.add((edge, edge.end))
+
+            np = layout.apply(self, vertices, edges, fixed=self.selected)
+
+            self.apply_positions(np)
+
+            if self.layouting.get():
+                self.after(25, iter_layout)
+
+        if self.layouting.get():
+            self.after(25, iter_layout)
+
+    def delete_element(self, element):
+        super(InteractiveCanvasGraph, self).delete_element(element)
+        self.selected.discard(element)
+
+    def update(self, observed):
+        if observed is self.selected:
+            for e in self.elements.values():
+                if e in self.selected:
+                    e.select()
+                else:
+                    e.deselect()
 
 
 class CanvasFrame(tk.Frame):
@@ -264,8 +294,9 @@ class CanvasFrame(tk.Frame):
         yscrollbar = tk.Scrollbar(self)
         yscrollbar.grid(row=1, column=1, sticky=tk.N + tk.S)
 
-        self.canvas = CanvasGraph(self, xscrollcommand=xscrollbar.set,
-                                  yscrollcommand=yscrollbar.set)
+        self.canvas = InteractiveCanvasGraph(self,
+                                             xscrollcommand=xscrollbar.set,
+                                             yscrollcommand=yscrollbar.set)
 
         self.canvas.grid(row=1, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
 
@@ -323,13 +354,4 @@ class CanvasFrame(tk.Frame):
 
         self.canvas.bind("<MouseWheel>", on_mousewheel)
 
-        # Mouses for the canvas
-        sm = SelectingMouse(selection=self.canvas.selected,
-                            elements=self.canvas.elements.values())
-        smm = SelectionModifyingMouse(selection=self.canvas.selected,
-                                      elements=self.canvas.elements.values())
-        mm = MovingMouse(self.canvas.selected)
-        self.canvas.register_mouse(sm, "1", "")
-        self.canvas.register_mouse(smm, "1", "Shift")
-        self.canvas.register_mouse(mm, "1", "")
-        self.mouses = [sm, smm, mm]
+
