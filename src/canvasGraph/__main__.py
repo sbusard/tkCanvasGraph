@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # One step of force-based layout
     frame.canvas.bind("o",
                       lambda e:
-                      frame.canvas.layout(OneStepForceBasedLayout()))
+                      frame.canvas.apply_layout(OneStepForceBasedLayout()))
 
     # Random adding
     def add_vertex(_):
