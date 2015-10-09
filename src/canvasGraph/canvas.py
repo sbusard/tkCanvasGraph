@@ -410,12 +410,20 @@ class InteractiveCanvasGraph(CanvasGraph):
 
 class CanvasFrame(tk.Frame):
     """
-    A frame containing a canvas graph in which one can display any graph.
+    A frame containing a canvas graph in which one can display a graph.
     The frame also includes buttons to apply layouts (interactive, force-based
     and dot layouts), as well as scrollbars and mouse wheel scroll.
+    The canvas graph is selectable, in the sense that it contains necessary
+    mechanisms to select and move elements.
     """
 
     def __init__(self, parent, **config):
+        """
+        Create a new CanvasFrame.
+
+        :param parent: the TK parent of the new frame.
+        :param config: the TK config of the new frame.
+        """
         super(CanvasFrame, self).__init__(parent, **config)
 
         self.grid_rowconfigure(1, weight=1)
