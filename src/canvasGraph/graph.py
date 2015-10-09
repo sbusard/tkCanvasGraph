@@ -1,3 +1,10 @@
+"""
+Graph elements.
+
+This module defines graph elements, that is, drawable elements such as vertices
+and edges.
+"""
+
 import math
 import tkinter as tk
 from copy import deepcopy
@@ -26,31 +33,42 @@ class Shape:
         """
         Draw this shape on canvas, around the given bounding box, with style,
         and return the handle on canvas.
-        
-        canvas -- the canvas;
-        bbox -- the tkinter-style bounding box to draw around;
-        style -- the style of the shape.
+
+        :param canvas: the canvas to draw on;
+        :param bbox: the tkinter-style bounding box to draw around;
+        :param style: the style of the shape.
+        :return: the handle of the drawn shape.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
     def intersection(self, bbox, end):
         """
-        Return the point of intersection between this shape with given bouding
+        Return the point of intersection between this shape with given bounding
         box, and the line segment defined by the center of this bounding box
         and end.
         Return None is such an intersection does not exist.
         
-        bbox -- the tkinter-style bounding box of this shape;
-        end -- the coordinates of the ending point.
+        :param bbox: the tkinter-style bounding box of this shape;
+        :param end: the (x, y) coordinates of the ending point.
+        :return: the (x, y) coordinates of the intersection point of this
+                 shape and the line between its center and end, if any,
+                 None otherwise.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
 
 class Oval(Shape):
+    """
+    The Oval shape is an ellipsis shape.
+    """
+
     def __init__(self, diameter=20):
         """
         Create a new oval shape with default diameter. Default diameter is used
         to draw a circle when the bounding box to draw around is too small.
+
+        :param diameter: the diameter of small shapes. (ignored if the shape
+                         is large enough)
         """
         self._diameter = diameter
 
@@ -97,10 +115,17 @@ class Oval(Shape):
 
 
 class Rectangle(Shape):
+    """
+    A rectangle shape.
+    """
+
     def __init__(self, size=5):
         """
         Create a new rectangle shape with default size. Default size is used
         to draw a square when the bounding box to draw around is too small.
+
+        :param size: the size of the square if its content is too small.
+                     (ignored if the content of the rectangle is large enough)
         """
         self._size = size
 
@@ -165,9 +190,11 @@ class GraphElement:
         """
         Create a graph element with shape, label and tooltip on canvas.
         The element must be added to the canvas after initialisation.
-        
-        If tooltip is not None, tooltip must be a string that will be used
-        on the element.
+
+        :param canvas: the canvas on which drawing on;
+        :param shape: the shape of the graph element;
+        :param label: the label inside the shape of the element;
+        :param tooltip: if not None, a string that will be used as a tooltip.
         """
         self._canvas = canvas
         self.shape = shape
@@ -187,7 +214,9 @@ class GraphElement:
         self.style.selected = deepcopy(selected_element_style)
 
     def handles(self):
-        """Return the handles of this element."""
+        """
+        Return the handles of this element.
+        """
         handles = []
         if self._handle is not None:
             handles.append(self._handle)
@@ -196,6 +225,12 @@ class GraphElement:
         return tuple(handles)
 
     def draw(self, x, y):
+        """
+        Draw this element on its canvas, centered at position x, y.
+
+        :param x: the horizontal position;
+        :param y: the vertical position.
+        """
         self.delete()
         canvas = self._canvas
 
@@ -224,8 +259,8 @@ class GraphElement:
         """
         Move this vertex on canvas.
         
-        dx -- the difference to move on x axis;
-        dy -- the difference to move on y axis.
+        :param dx: the difference to move on x axis;
+        :param dy: the difference to move on y axis.
         """
         canvas = self._canvas
         canvas.move(self._handle, dx, dy)
@@ -236,6 +271,10 @@ class GraphElement:
         """
         Move this vertex to x,y on canvas
         and return the corresponding dx,dy.
+
+        :param x: the horizontal position;
+        :param y: the vertical position.
+        :return: the difference of old and new positions.
         """
         curx, cury = self.center()
         dx = x - curx
@@ -244,25 +283,43 @@ class GraphElement:
         return dx, dy
 
     def delete(self):
-        """Remove this element from canvas."""
+        """
+        Remove this element from canvas.
+        """
         self._canvas.delete_element(self)
         self._handle = None
         self._labelhandle = None
 
     def center(self):
+        """
+        Return the center point of this element.
+
+        :return: the (x, y) coordinates of the center point.
+        """
         x0, y0, x1, y1 = self._canvas.coords(self._handle)
         return (x0 + x1) / 2, (y0 + y1) / 2
 
     def bbox(self):
+        """
+        Return the bounding box of this element.
+        :return: the (x0, y0, x1, y1) coordinates of the bounding box.
+        """
         return self._canvas.bbox(self._handle)
 
     def dimensions(self):
-        """Return this element width and height."""
+        """
+        Return this element width and height.
+
+        :return: the (width, height) pair.
+        """
         x0, y0, x1, y1 = self.bbox()
         return x1 - x0, y1 - y0
 
     @property
     def label(self):
+        """
+        The label of this element.
+        """
         return self._label
 
     @label.setter
@@ -271,10 +328,16 @@ class GraphElement:
         self.draw(*self.center())
 
     def select(self):
+        """
+        Set this element as selected. Change its appearance.
+        """
         self._selected = True
         self.refresh()
 
     def deselect(self):
+        """
+        Set this element as not selected. Change its appearance.
+        """
         self._selected = False
         self.refresh()
 
@@ -282,9 +345,9 @@ class GraphElement:
         """
         Refresh the appearance of this vertex on canvas.
         
-        style -- if not None, a dictionary defining the style for shape and
-                 text
-                 if None, the common style of this element is used.
+        :param style: if not None, a dictionary defining the style for shape
+                      and text if None, the common style of this element is
+                      used.
         """
         canvas = self._canvas
         if style is None:
@@ -302,11 +365,11 @@ class GraphElement:
         """
         Add an event binding to this element on canvas.
         
-        event -- the event specifier;
-        callback -- the function to call when the event occurs.
-                    a function taking one argument: the event;
-        add -- if present and set to "+", the new binding is added to any
-               existing binding.
+        :param event: the event specifier;
+        :param callback: the function to call when the event occurs.
+                         a function taking one argument: the event;
+        :param add: if not None and set to "+", the new binding is added to any
+                    existing binding.
         """
         for handle in self.handles():
             self._canvas.tag_bind(handle, event, callback, add)
@@ -314,6 +377,8 @@ class GraphElement:
     def unbind(self, event):
         """
         Remove all the bindings for event of the element on canvas.
+
+        :param the event specifier to remove the binding on.
         """
         for handle in self.handles():
             self._canvas.tag_unbind(handle, event)
@@ -338,7 +403,12 @@ class Vertex(GraphElement):
 
     def __init__(self, canvas, label="", position=None, tooltip=None):
         """
-        Create a vertex with label on canvas.
+        Create a vertex with label on canvas, at position with tooltip.
+
+        :param canvas: the canvas on which drawing on;
+        :param label: the label inside the shape of the element;
+        :param position: if not None, the position at which drawing the vertex;
+        :param tooltip: if not None, a string that will be used as a tooltip.
         """
         super(Vertex, self).__init__(canvas, shape=Oval(), label=label,
                                      tooltip=tooltip)
@@ -359,6 +429,13 @@ class Edge(GraphElement):
         """
         Create an edge between origin and end. If position is None, draw the 
         edge between origin and end.
+
+        :param canvas: the canvas on which drawing on;
+        :param origin: the origin vertex;
+        :param end: the end vertex;
+        :param label: the label inside the shape of the element;
+        :param position: the position at which drawing the edge label;
+        :param tooltip: if not None, a string that will be used as a tooltip.
         """
         super(Edge, self).__init__(canvas, shape=Rectangle(), label=label,
                                    tooltip=tooltip)
@@ -379,17 +456,27 @@ class Edge(GraphElement):
         self._canvas.add_edge(self, position)
 
     def handles(self):
+        """
+        Return the handles of this edge.
+
+        :return: the set of handles taking part in this edge.
+        """
         if self._arrowhandle is not None:
             return super(Edge, self).handles() + (self._arrowhandle,)
         else:
             return super(Edge, self).handles()
 
     def delete(self):
-        """Remove this edge from canvas."""
+        """
+        Remove this edge from canvas.
+        """
         super(Edge, self).delete()
         self._arrowhandle = None
 
     def refresh_arrows(self):
+        """
+        Redraw the arrows of this edge.
+        """
         canvas = self._canvas
         if self._arrowhandle is not None:
             canvas.delete_handle(self._arrowhandle)
