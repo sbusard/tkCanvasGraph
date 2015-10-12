@@ -196,13 +196,16 @@ class CanvasGraph(tk.Canvas):
     def add_edge(self, edge, position=None):
         """
         Add the given edge on this canvas at position, if specified.
-        If position is None, set it at random in the frame defined by the
-        existing elements, or in the (0,0), (100, 100) rectangle if there are
-        no elements.
+        If position is None, set the label at the middle position between
+        its origin and end vertices.
         
         :param edge: the edge to add and draw;
         :param position: if not None, an x,y tuple.
         """
+        if position is None:
+            xo, yo = edge.origin.center()
+            xe, ye = edge.end.center()
+            position = ((xo + xe) / 2, (yo + ye) / 2)
         self._add_element(edge, position)
         self.edges.add(edge)
 

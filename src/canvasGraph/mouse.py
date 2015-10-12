@@ -268,7 +268,8 @@ class CreatingMouse(Mouse):
         else:
             x = canvas.canvasx(event.x)
             y = canvas.canvasy(event.y)
-            Vertex(canvas, position=(x, y))
+            v = Vertex(canvas)
+            canvas.add_vertex(v, position=(x, y))
             return False
 
     def moved(self, canvas, event):
@@ -287,7 +288,8 @@ class CreatingMouse(Mouse):
             #   do nothing
 
             if element is not None and element in self.vertices:
-                Edge(canvas, self.starting, element)
+                edge = Edge(canvas, self.starting, element)
+                canvas.add_edge(edge)
                 self.starting = None
                 return False
             else:

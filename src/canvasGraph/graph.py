@@ -368,19 +368,16 @@ class Vertex(GraphElement):
     selecting the vertex, but will not change back when deselecting it.
     """
 
-    def __init__(self, canvas, label="", position=None, tooltip=None):
+    def __init__(self, canvas, label="", tooltip=None):
         """
-        Create a vertex with label on canvas, at position with tooltip.
+        Create a vertex with label on canvas with tooltip.
 
         :param canvas: the canvas on which drawing on;
         :param label: the label inside the shape of the element;
-        :param position: if not None, the position at which drawing the vertex;
         :param tooltip: if not None, a string that will be used as a tooltip.
         """
         super(Vertex, self).__init__(canvas, shape=Oval(), label=label,
                                      tooltip=tooltip)
-
-        self._canvas.add_vertex(self, position)
 
 
 class Edge(GraphElement):
@@ -391,17 +388,14 @@ class Edge(GraphElement):
     style.common.arrow dictionary for the arrow of the edge.
     """
 
-    def __init__(self, canvas, origin, end, label="", position=None,
-                 tooltip=None):
+    def __init__(self, canvas, origin, end, label="", tooltip=None):
         """
-        Create an edge between origin and end. If position is None, draw the 
-        edge between origin and end.
+        Create an edge between origin and end.
 
         :param canvas: the canvas on which drawing on;
         :param origin: the origin vertex;
         :param end: the end vertex;
         :param label: the label inside the shape of the element;
-        :param position: the position at which drawing the edge label;
         :param tooltip: if not None, a string that will be used as a tooltip.
         """
         super(Edge, self).__init__(canvas, shape=Rectangle(), label=label,
@@ -413,14 +407,6 @@ class Edge(GraphElement):
         # Common style
         self.style.arrow = AttrDict()
         self.style.arrow.arrow = "last"
-
-        # Position
-        if position is None:
-            xo, yo = origin.center()
-            xe, ye = end.center()
-            position = ((xo + xe) / 2, (yo + ye) / 2)
-
-        self._canvas.add_edge(self, position)
 
     def handles(self):
         """

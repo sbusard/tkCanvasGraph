@@ -34,14 +34,16 @@ if __name__ == "__main__":
                              "TEST" +
                              str(random.randint(0, 100))
                              for _ in range(3)))
+        frame.canvas.add_vertex(v)
         added.add(v)
 
-    def added_vertex(_, style):
-        style["shape"]["width"] = 2
+    def added_vertex(element, style):
+        if element.label and isinstance(element, Vertex):
+            style["shape"]["width"] = 4
     frame.canvas.register_transformer(added_vertex)
 
-    def selected_vertex(vertex, style):
-        if vertex in frame.canvas.selected:
+    def selected_vertex(element, style):
+        if element.label and element in frame.canvas.selected:
             style["shape"]["outline"] = "red"
     frame.canvas.register_transformer(selected_vertex)
 
@@ -58,7 +60,8 @@ if __name__ == "__main__":
                          if edge.origin == o and edge.end == e]) <= 0]
         if len(pairs) > 0:
             o, e = random.choice(pairs)
-            Edge(frame.canvas, o, e, label=str(random.randint(0, 100)))
+            edge = Edge(frame.canvas, o, e, label=str(random.randint(0, 100)))
+            frame.canvas.add_edge(edge)
 
 
     frame.canvas.bind("k", add_edge)
