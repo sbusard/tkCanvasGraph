@@ -35,6 +35,9 @@ class CanvasGraph(tk.Canvas):
         self.vertices = set()
         self.edges = set()
 
+        # Transformers
+        self.transformers = []
+
         # Mouses indexed by their binding button
         self.mouses = {}
 
@@ -117,7 +120,8 @@ class CanvasGraph(tk.Canvas):
             if self.layouting.get():
                 self.after(self.layout_interval, iter_layout)
 
-        self.layouting.set(True)
+        if not self.layouting.get():
+            self.layouting.set(True)
         self.after(self.layout_interval, iter_layout)
 
     def current_element(self):
@@ -336,6 +340,25 @@ class CanvasGraph(tk.Canvas):
                 if not mouse.released(self, event):
                     break
 
+    def register_transformer(self, transformer):
+        """
+        Register the given transformer.
+        The transformer must be a function taking an element (vertex or edge)
+        and a style as arguments and updating the style.
+
+        :param transformer: the transformer to register.
+        """
+        self.transformers.append(transformer)
+
+    def unregister_transformer(self, transformer):
+        """
+        Unregister the given transformer.
+
+        :param transformer: the transformer to unregister.
+        """
+        while transformer in self.transformers:
+            self.transformers.remove(transformer)
+
 
 class InteractiveCanvasGraph(CanvasGraph):
     """
@@ -357,7 +380,23 @@ class InteractiveCanvasGraph(CanvasGraph):
         super(InteractiveCanvasGraph, self).__init__(parent, **config)
         # Selected vertices
         self.selected = ObservableSet()
-        self.selected.register(self)
+
+        # Selected vertices transformer and observer
+        def selected(element, style):
+            if element in self.selected:
+                style["shape"]["fill"] = "yellow"
+        self.register_transformer(selected)
+
+        class SelectionObserver:
+            def __init__(self, canvas):
+                self.canvas = canvas
+
+            def update(self, _):
+                for e in self.canvas.elements.values():
+                    e.refresh()
+
+        observer = SelectionObserver(self)
+        self.selected.register(observer)
 
         # Mouses for the canvas
         sm = SelectingMouse(selection=self.selected,
@@ -375,17 +414,6 @@ class InteractiveCanvasGraph(CanvasGraph):
     def delete_element(self, element):
         super(InteractiveCanvasGraph, self).delete_element(element)
         self.selected.discard(element)
-
-    def update(self, observed):
-        """
-        Update display according to selected elements.
-        """
-        if observed is self.selected:
-            for e in self.elements.values():
-                if e in self.selected:
-                    e.select()
-                else:
-                    e.deselect()
 
 
 class CanvasFrame(tk.Frame):
@@ -434,7 +462,9 @@ class CanvasFrame(tk.Frame):
         osfbl = OneStepForceBasedLayout()
         self.canvas.layouting.trace("w",
                                     lambda *args:
-                                    self.canvas.apply_interactive_layout(osfbl))
+                                    self.canvas.layouting.get() and
+                                    self.canvas.apply_interactive_layout(osfbl)
+                                   )
         ilbutton = tk.Checkbutton(self.toolbar,
                                   text="Interactive layout",
                                   onvalue=True, offvalue=False,

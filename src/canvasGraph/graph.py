@@ -11,19 +11,6 @@ from copy import deepcopy
 from .util import AttrDict, CanvasToolTip
 
 
-# Elements common style
-element_style = AttrDict()
-element_style.shape = AttrDict()
-element_style.shape.fill = "white"
-element_style.text = AttrDict()
-element_style.text.justify = tk.CENTER
-
-selected_element_style = AttrDict()
-selected_element_style.shape = AttrDict()
-selected_element_style.shape.fill = "yellow"
-selected_element_style.text = AttrDict()
-
-
 class Shape:
     """
     The shape of a graph element.
@@ -205,13 +192,12 @@ class GraphElement:
         self._handle = None
         self._labelhandle = None
 
-        # Styles
+        # Common style
         self.style = AttrDict()
-        self.style.common = deepcopy(element_style)
-
-        # Start as not selected
-        self._selected = False
-        self.style.selected = deepcopy(selected_element_style)
+        self.style.shape = AttrDict()
+        self.style.shape.fill = "white"
+        self.style.text = AttrDict()
+        self.style.text.justify = tk.CENTER
 
     def handles(self):
         """
@@ -237,15 +223,14 @@ class GraphElement:
         # Add label on canvas and store handle
         if self.label != "":
             self._labelhandle = canvas.create_text(x, y,
-                                                   text=self.label,
-                                                   **self.style.common.text)
+                                                   text=self.label)
             bbox = canvas.bbox(self._labelhandle)
         else:
             self._labelhandle = None
             bbox = (x, y, x, y)
 
         # Draw on canvas and store handle
-        self._handle = self.shape.draw(canvas, bbox, self.style.common.shape)
+        self._handle = self.shape.draw(canvas, bbox, self.style.shape)
 
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
@@ -254,6 +239,8 @@ class GraphElement:
             for handle in self.handles():
                 CanvasToolTip(canvas, handle, follow_mouse=1,
                               text=self.tooltip)
+
+        self.refresh()
 
     def move(self, dx, dy):
         """
@@ -266,6 +253,7 @@ class GraphElement:
         canvas.move(self._handle, dx, dy)
         if self._labelhandle is not None:
             canvas.move(self._labelhandle, dx, dy)
+        self.refresh()
 
     def move_to(self, x, y):
         """
@@ -325,37 +313,16 @@ class GraphElement:
     @label.setter
     def label(self, value):
         self._label = value
-        self.draw(*self.center())
 
-    def select(self):
+    def refresh(self):
         """
-        Set this element as selected. Change its appearance.
-        """
-        self._selected = True
-        self.refresh()
-
-    def deselect(self):
-        """
-        Set this element as not selected. Change its appearance.
-        """
-        self._selected = False
-        self.refresh()
-
-    def refresh(self, style=None):
-        """
-        Refresh the appearance of this vertex on canvas.
-        
-        :param style: if not None, a dictionary defining the style for shape
-                      and text if None, the common style of this element is
-                      used.
+        Refresh the appearance of this element on canvas.
         """
         canvas = self._canvas
-        if style is None:
-            style = deepcopy(self.style.common)
 
-        if self._selected:
-            style.shape.update(self.style.selected.shape)
-            style.text.update(self.style.selected.text)
+        style = deepcopy(self.style)
+        for transformer in canvas.transformers:
+            transformer(self, style)
 
         canvas.itemconfig(self._handle, style.shape)
         if self._labelhandle is not None:
@@ -444,8 +411,8 @@ class Edge(GraphElement):
         self._arrowhandle = None
 
         # Common style
-        self.style.common.arrow = AttrDict()
-        self.style.common.arrow.arrow = "last"
+        self.style.arrow = AttrDict()
+        self.style.arrow.arrow = "last"
 
         # Position
         if position is None:
@@ -478,6 +445,9 @@ class Edge(GraphElement):
         Redraw the arrows of this edge.
         """
         canvas = self._canvas
+        style = deepcopy(self.style)
+        for transformer in canvas.transformers:
+            transformer(self, style)
         if self._arrowhandle is not None:
             canvas.delete_handle(self._arrowhandle)
         # Draw line: from origin to label and from label to end
@@ -488,13 +458,17 @@ class Edge(GraphElement):
         xe, ye = self.end.shape.intersection(self.end.bbox(), self.center())
         self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
                                                 xel, yel, xe, ye),
-                                               **self.style.common.arrow)
+                                               **style.arrow)
         canvas.tag_raise(self._handle)
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
 
     def draw(self, x, y):
         super(Edge, self).draw(x, y)
+        style = deepcopy(self.style)
+        for transformer in self._canvas.transformers:
+            transformer(self, style)
+        self.current_style = style
         self.refresh_arrows()
 
     def move(self, dx, dy):
@@ -502,6 +476,10 @@ class Edge(GraphElement):
         # Redraw arrow
         self.refresh_arrows()
 
-    def refresh(self, style=None):
-        super(Edge, self).refresh(style=style)
-        self._canvas.itemconfig(self._arrowhandle, self.style.common.arrow)
+    def refresh(self):
+        super(Edge, self).refresh()
+        style = deepcopy(self.style)
+        for transformer in self._canvas.transformers:
+            transformer(self, style)
+        self.current_style = style
+        self._canvas.itemconfig(self._arrowhandle, style.arrow)
