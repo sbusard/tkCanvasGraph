@@ -46,6 +46,30 @@ class CanvasGraph(tk.Canvas):
         self.layouting.set(False)
         self.layout_interval = 25
 
+    def _get_positions(self, layout, vertices, edges):
+        """
+        Return the positions resulting of applying layout on vertices and
+        edges.
+
+        :param layout: the layout to apply;
+        :param vertices: the vertices and their center position;
+        :param edges: the edges couples (origin, end);
+        :return: the new positions of vertices.
+        """
+        return layout.apply(self, vertices, edges)
+
+    def _apply_positions(self, positions):
+        """
+        Move all elements of positions at their new position.
+
+        :param positions: a dictionary of element -> x,y positions.
+        """
+        for element in positions.keys() & self.vertices:
+            element.move_to(*positions[element])
+        for element in positions.keys() & self.edges:
+            element.move_to(*positions[element])
+        self._update_scrollregion()
+
     def apply_layout(self, layout):
         """
         Apply the given layout on this canvas.
@@ -60,19 +84,8 @@ class CanvasGraph(tk.Canvas):
         for edge in self.edges:
             edges.add((edge.origin, edge))
             edges.add((edge, edge.end))
-        np = layout.apply(self, vertices, edges)
+        np = self._get_positions(layout, vertices, edges)
         self._apply_positions(np)
-
-    def _apply_positions(self, positions):
-        """
-        Move all elements of positions at their new position.
-        :param positions: a dictionary of element -> x,y positions.
-        """
-        for element in positions.keys() & self.vertices:
-            element.move_to(*positions[element])
-        for element in positions.keys() & self.edges:
-            element.move_to(*positions[element])
-        self._update_scrollregion()
 
     def apply_interactive_layout(self, layout):
         """
@@ -97,7 +110,7 @@ class CanvasGraph(tk.Canvas):
                 edges.add((edge.origin, edge))
                 edges.add((edge, edge.end))
 
-            np = layout.apply(self, vertices, edges)
+            np = self._get_positions(layout, vertices, edges)
 
             self._apply_positions(np)
 
@@ -356,41 +369,8 @@ class InteractiveCanvasGraph(CanvasGraph):
         self.register_mouse(smm, "1", "Shift")
         self.register_mouse(mm, "1", "")
 
-    def apply_interactive_layout(self, layout):
-        """
-        Apply the given interactive layout.
-
-        :param layout: the layout to apply now and then. The interval the
-                       layout is applied is self.layout_interval.
-
-        The self.layouting variable is set to True to tell that interactive
-        layouting is enabled. Then every layout_interval milliseconds, the
-        given layout is applied on the current graph.
-        The process is stopped as soon as layouting is set to False.
-
-        The set of selected elements of this canvas are given as the fixed
-        parameter of the layout.
-        """
-        def iter_layout():
-            if not self.layouting.get():
-                return
-
-            vertices = {element: element.center()
-                        for element in self.elements.values()}
-            edges = set()
-            for edge in self.edges:
-                edges.add((edge.origin, edge))
-                edges.add((edge, edge.end))
-
-            np = layout.apply(self, vertices, edges, fixed=self.selected)
-
-            self._apply_positions(np)
-
-            if self.layouting.get():
-                self.after(25, iter_layout)
-
-        if self.layouting.get():
-            self.after(25, iter_layout)
+    def _get_positions(self, layout, vertices, edges):
+        return layout.apply(self, vertices, edges, fixed=self.selected)
 
     def delete_element(self, element):
         super(InteractiveCanvasGraph, self).delete_element(element)
