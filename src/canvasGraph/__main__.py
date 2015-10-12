@@ -24,6 +24,7 @@ if __name__ == "__main__":
                       frame.canvas.apply_layout(OneStepForceBasedLayout()))
 
     # Random adding
+    added = set()
     def add_vertex(_):
         v = Vertex(frame.canvas,
                    str(random.randint(0, 100)) + "\n" +
@@ -33,9 +34,16 @@ if __name__ == "__main__":
                              "TEST" +
                              str(random.randint(0, 100))
                              for _ in range(3)))
-        v.style.common.shape.width = 2
-        v.style.selected.shape.outline = "red"
-        v.refresh()
+        added.add(v)
+
+    def added_vertex(_, style):
+        style["shape"]["width"] = 2
+    frame.canvas.register_transformer(added_vertex)
+
+    def selected_vertex(vertex, style):
+        if vertex in frame.canvas.selected:
+            style["shape"]["outline"] = "red"
+    frame.canvas.register_transformer(selected_vertex)
 
 
     frame.canvas.bind("j", add_vertex)
