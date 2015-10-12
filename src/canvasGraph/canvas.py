@@ -175,9 +175,10 @@ class CanvasGraph(tk.Canvas):
                 position = x0 + x, y0 + y
 
         element.draw(*position)
-        self._update_scrollregion()
         for handle in element.handles():
             self.elements[handle] = element
+        self._update_scrollregion()
+        self.refresh()
 
     def add_vertex(self, vertex, position=None):
         """
@@ -212,13 +213,15 @@ class CanvasGraph(tk.Canvas):
         :param element: the element to delete.
         """
         for handle in element.handles():
-            self.delete_handle(handle)
+            self._delete_handle(handle)
 
         # Discard from other sets
         self.vertices.discard(element)
         self.edges.discard(element)
 
-    def delete_handle(self, handle):
+        self.refresh()
+
+    def _delete_handle(self, handle):
         """
         Delete the given handle.
 
@@ -240,7 +243,8 @@ class CanvasGraph(tk.Canvas):
             e.move(dx, dy)
         for edge in self.edges:
             if edge.origin in elements or edge.end in elements:
-                edge.refresh_arrows()
+                edge.refresh()
+        self.refresh()
 
         # Update scrollregion
         self._update_scrollregion()
@@ -256,6 +260,14 @@ class CanvasGraph(tk.Canvas):
             minx, miny, maxx, maxy = bbox
             self.config(scrollregion=(minx - PADDING, miny - PADDING,
                                       maxx + PADDING, maxy + PADDING))
+
+    def refresh(self):
+        """
+        Refresh all elements of this canvas.
+        """
+        elements = set(self.elements.values())
+        for element in elements:
+            element.refresh()
 
     def register_mouse(self, mouse, button, modifier):
         """
@@ -397,6 +409,19 @@ class InteractiveCanvasGraph(CanvasGraph):
 
         observer = SelectionObserver(self)
         self.selected.register(observer)
+
+        def rainbow(element, style):
+            bbox = self.bbox("all")
+            if bbox:
+                xlu, ylu, xdr, ydr = bbox
+                xc, yc = element.center()
+                # Color border from red to blue, depending on the relative
+                # horizontal position; left is red, right is blue
+                red = int(255 * (xc - xlu) / (xdr - xlu))
+                blue = int(255 * (xdr - xc) / (xdr - xlu))
+                style["shape"]["outline"] = "#%02x00%02x" % (red, blue)
+                style["shape"]["width"] = 2
+        self.register_transformer(rainbow)
 
         # Mouses for the canvas
         sm = SelectingMouse(selection=self.selected,

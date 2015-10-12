@@ -440,7 +440,7 @@ class Edge(GraphElement):
         super(Edge, self).delete()
         self._arrowhandle = None
 
-    def refresh_arrows(self):
+    def _refresh_arrows(self):
         """
         Redraw the arrows of this edge.
         """
@@ -448,38 +448,37 @@ class Edge(GraphElement):
         style = deepcopy(self.style)
         for transformer in canvas.transformers:
             transformer(self, style)
-        if self._arrowhandle is not None:
-            canvas.delete_handle(self._arrowhandle)
+
         # Draw line: from origin to label and from label to end
         xo, yo = self.origin.shape.intersection(self.origin.bbox(),
                                                 self.center())
         xol, yol = self.shape.intersection(self.bbox(), self.origin.center())
         xel, yel = self.shape.intersection(self.bbox(), self.end.center())
         xe, ye = self.end.shape.intersection(self.end.bbox(), self.center())
-        self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
-                                                xel, yel, xe, ye),
-                                               **style.arrow)
+
+        if self._arrowhandle is not None:
+            canvas.coords(self._arrowhandle, *(xo, yo, xol, yol,
+                                               xel, yel, xe, ye))
+            canvas.itemconfig(self._arrowhandle, style.arrow)
+        else:
+            self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
+                                                    xel, yel, xe, ye),
+                                                   **style.arrow)
         canvas.tag_raise(self._handle)
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
 
     def draw(self, x, y):
         super(Edge, self).draw(x, y)
-        style = deepcopy(self.style)
-        for transformer in self._canvas.transformers:
-            transformer(self, style)
-        self.current_style = style
-        self.refresh_arrows()
+        self._refresh_arrows()
 
     def move(self, dx, dy):
         super(Edge, self).move(dx, dy)
-        # Redraw arrow
-        self.refresh_arrows()
 
     def refresh(self):
         super(Edge, self).refresh()
         style = deepcopy(self.style)
         for transformer in self._canvas.transformers:
             transformer(self, style)
-        self.current_style = style
         self._canvas.itemconfig(self._arrowhandle, style.arrow)
+        self._refresh_arrows()
