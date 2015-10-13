@@ -16,6 +16,7 @@ from .layout import ForceBasedLayout, OneStepForceBasedLayout, DotLayout
 
 __all__ = ["CanvasGraph", "InteractiveCanvasGraph", "CanvasFrame"]
 
+
 class CanvasGraph(tk.Canvas):
     """
     A canvas graph is a TK canvas on which you can display graphs.
@@ -492,7 +493,7 @@ class CanvasFrame(tk.Frame):
                                     lambda *args:
                                     self.canvas.layouting.get() and
                                     self.canvas.apply_interactive_layout(osfbl)
-                                   )
+                                    )
         ilbutton = tk.Checkbutton(self.toolbar,
                                   text="Interactive layout",
                                   onvalue=True, offvalue=False,
@@ -511,7 +512,8 @@ class CanvasFrame(tk.Frame):
         fblbutton.config()
         fblbutton.grid(row=0, column=1, sticky=tk.W)
 
-        self.canvas.bind("<Control-l>", lambda e: self.canvas.apply_layout(fbl))
+        self.canvas.bind("<Control-l>",
+                         lambda e: self.canvas.apply_layout(fbl))
 
         # Dot layout
         try:
@@ -523,7 +525,8 @@ class CanvasFrame(tk.Frame):
                                  command=lambda: self.canvas.apply_layout(dl))
             dlbutton.grid(row=0, column=2, sticky=tk.W)
 
-            self.canvas.bind("<Control-d>", lambda e: self.canvas.apply_layout(dl))
+            self.canvas.bind("<Control-d>",
+                             lambda e: self.canvas.apply_layout(dl))
         except ImportError:
             pass
 

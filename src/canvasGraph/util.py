@@ -8,6 +8,7 @@ Utility functions and data structures.
 
 __all__ = ["ObservableSet", "AttrDict", "CanvasToolTip"]
 
+
 class ObservableSet(set):
     """
     An observable set is a set that notifies all its registered observers

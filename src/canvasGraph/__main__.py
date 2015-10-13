@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
     # Random adding
     added = set()
+
     def add_vertex(_):
         v = Vertex(frame.canvas,
                    str(random.randint(0, 100)) + "\n" +
@@ -46,7 +47,6 @@ if __name__ == "__main__":
         if element.label and element in frame.canvas.selected:
             style["shape"]["outline"] = "red"
     frame.canvas.register_transformer(selected_vertex)
-
 
     frame.canvas.bind("j", add_vertex)
 

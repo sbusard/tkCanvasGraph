@@ -366,7 +366,7 @@ class GraphElement:
         """
         Remove all the bindings for event of the element on canvas.
 
-        :param the event specifier to remove the binding on.
+        :param event: the event specifier to remove the binding on.
 
         This element must be already drawn on its canvas.
         """

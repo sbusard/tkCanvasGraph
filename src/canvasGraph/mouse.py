@@ -13,6 +13,7 @@ to several pre-defined mouses.
 __all__ = ["Mouse", "SelectingMouse", "SelectionModifyingMouse", "MovingMouse",
            "CreatingMouse"]
 
+
 class Mouse(object):
     """
     A generic mouse doing nothing.
@@ -99,7 +100,7 @@ class SelectingMouse(Mouse):
 
         if element is not None:
             if ((self.elements is None or element in self.elements) and
-                        element not in self.selected):
+                    element not in self.selected):
                 self.selected.clear()
                 self.selected.add(element)
             return True
@@ -179,7 +180,7 @@ class SelectionModifyingMouse(Mouse):
             return False
 
         elif ((self.elements is None or element in self.elements) and
-                      element not in self.selected):
+              element not in self.selected):
             self.selected.add(element)
             return False
 

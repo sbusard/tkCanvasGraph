@@ -10,6 +10,7 @@ the abstract layout class, this module provides several pre-defined layouts.
 __all__ = ["Layout", "OneStepForceBasedLayout", "ForceBasedLayout",
            "DotLayout"]
 
+
 class Layout:
     """
     A graph layout.
@@ -156,7 +157,7 @@ class OneStepForceBasedLayout(Layout):
 
         return fx, fy
 
-    def _apply_and_get_force(self, canvas, positions, edges, fixed=None):
+    def _apply_and_get_force(self, _, positions, edges, fixed=None):
         """
         Apply this layout on positions and edges, keeping fixed elements in
         place, and return the new positions as well as the average force on
@@ -262,7 +263,7 @@ class DotLayout:
     A layout using fdp (part of graphviz library) to layout the graph.
     """
 
-    def apply(self, canvas, vertices, edges, fixed=None):
+    def apply(self, _, vertices, edges, fixed=None):
         if pydot is None:
             raise ImportError("Cannot use dot layout, pydot is not installed.")
 
