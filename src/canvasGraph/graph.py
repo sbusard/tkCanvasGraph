@@ -325,10 +325,6 @@ class GraphElement:
         """
         return self._label
 
-    @label.setter
-    def label(self, value):
-        self._label = value
-
     def refresh(self):
         """
         Refresh the appearance of this element on canvas.
