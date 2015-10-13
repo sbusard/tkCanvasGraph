@@ -248,7 +248,10 @@ class GraphElement:
         
         :param dx: the difference to move on x axis;
         :param dy: the difference to move on y axis.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
         canvas.move(self._handle, dx, dy)
         if self._labelhandle is not None:
@@ -263,7 +266,10 @@ class GraphElement:
         :param x: the horizontal position;
         :param y: the vertical position.
         :return: the difference of old and new positions.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         curx, cury = self.center()
         dx = x - curx
         dy = y - cury
@@ -272,7 +278,7 @@ class GraphElement:
 
     def delete(self):
         """
-        Remove this element from canvas.
+        Remove this element from canvas, if it is already drawn.
         """
         self._canvas.delete_element(self)
         self._handle = None
@@ -283,7 +289,10 @@ class GraphElement:
         Return the center point of this element.
 
         :return: the (x, y) coordinates of the center point.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         x0, y0, x1, y1 = self._canvas.coords(self._handle)
         return (x0 + x1) / 2, (y0 + y1) / 2
 
@@ -291,7 +300,10 @@ class GraphElement:
         """
         Return the bounding box of this element.
         :return: the (x0, y0, x1, y1) coordinates of the bounding box.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         return self._canvas.bbox(self._handle)
 
     def dimensions(self):
@@ -299,7 +311,10 @@ class GraphElement:
         Return this element width and height.
 
         :return: the (width, height) pair.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         x0, y0, x1, y1 = self.bbox()
         return x1 - x0, y1 - y0
 
@@ -317,7 +332,10 @@ class GraphElement:
     def refresh(self):
         """
         Refresh the appearance of this element on canvas.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
 
         style = deepcopy(self.style)
@@ -337,7 +355,10 @@ class GraphElement:
                          a function taking one argument: the event;
         :param add: if not None and set to "+", the new binding is added to any
                     existing binding.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         for handle in self.handles():
             self._canvas.tag_bind(handle, event, callback, add)
 
@@ -346,7 +367,10 @@ class GraphElement:
         Remove all the bindings for event of the element on canvas.
 
         :param the event specifier to remove the binding on.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         for handle in self.handles():
             self._canvas.tag_unbind(handle, event)
 
@@ -422,6 +446,8 @@ class Edge(GraphElement):
     def delete(self):
         """
         Remove this edge from canvas.
+
+        This element must be already drawn on its canvas.
         """
         super(Edge, self).delete()
         self._arrowhandle = None
@@ -429,7 +455,10 @@ class Edge(GraphElement):
     def _refresh_arrows(self):
         """
         Redraw the arrows of this edge.
+
+        This element must be already drawn on its canvas.
         """
+        assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
         style = deepcopy(self.style)
         for transformer in canvas.transformers:
@@ -457,9 +486,6 @@ class Edge(GraphElement):
     def draw(self, x, y):
         super(Edge, self).draw(x, y)
         self._refresh_arrows()
-
-    def move(self, dx, dy):
-        super(Edge, self).move(dx, dy)
 
     def refresh(self):
         super(Edge, self).refresh()
