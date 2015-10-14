@@ -43,6 +43,15 @@ class Shape:
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
+    def dimension(self, bbox):
+        """
+        Return the dimension of this shape around the given bounding box.
+
+        :param bbox: the (x0, y0, x1, y1) bounding box.
+        :return: the (x'0, y'0, x'1, y'1) bounding box of this shape around
+                 bbox.
+        """
+
 
 class Oval(Shape):
     """
@@ -60,24 +69,7 @@ class Oval(Shape):
         self._diameter = diameter
 
     def draw(self, canvas, bbox, style):
-        x0l, y0l, x1l, y1l = bbox
-        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
-
-        if x1l - x0l < self._diameter:
-            x0e = xc - self._diameter / 2
-            x1e = xc + self._diameter / 2
-        else:
-            x0e = xc - (x1l - x0l) / 2 * math.sqrt(2)
-            x1e = xc + (x1l - x0l) / 2 * math.sqrt(2)
-
-        if y1l - y0l < self._diameter:
-            y0e = yc - self._diameter / 2
-            y1e = yc + self._diameter / 2
-        else:
-            y0e = yc - (y1l - y0l) / 2 * math.sqrt(2)
-            y1e = yc + (y1l - y0l) / 2 * math.sqrt(2)
-
-        return canvas.create_oval((x0e, y0e, x1e, y1e), **style)
+        return canvas.create_oval(self.dimension(bbox), **style)
 
     def intersection(self, bbox, end):
         xo0, yo0, xo1, yo1 = bbox
@@ -100,6 +92,26 @@ class Oval(Shape):
         return (xoc + dox if xec >= xoc else xoc - dox,
                 yoc + doy if xec > xoc else yoc - doy)
 
+    def dimension(self, bbox):
+        x0l, y0l, x1l, y1l = bbox
+        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
+
+        if x1l - x0l < self._diameter:
+            x0e = xc - self._diameter / 2
+            x1e = xc + self._diameter / 2
+        else:
+            x0e = xc - (x1l - x0l) / 2 * math.sqrt(2)
+            x1e = xc + (x1l - x0l) / 2 * math.sqrt(2)
+
+        if y1l - y0l < self._diameter:
+            y0e = yc - self._diameter / 2
+            y1e = yc + self._diameter / 2
+        else:
+            y0e = yc - (y1l - y0l) / 2 * math.sqrt(2)
+            y1e = yc + (y1l - y0l) / 2 * math.sqrt(2)
+
+        return x0e, y0e, x1e, y1e
+
 
 class Rectangle(Shape):
     """
@@ -117,22 +129,7 @@ class Rectangle(Shape):
         self._size = size
 
     def draw(self, canvas, bbox, style):
-        x0l, y0l, x1l, y1l = bbox
-        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
-
-        if x1l - x0l < self._size:
-            x0e = xc - self._size / 2
-            x1e = xc + self._size / 2
-        else:
-            x0e, x1e = x0l, x1l
-
-        if y1l - y0l < self._size:
-            y0e = yc - self._size / 2
-            y1e = yc + self._size / 2
-        else:
-            y0e, y1e = y0l, y1l
-
-        return canvas.create_rectangle((x0e, y0e, x1e, y1e), **style)
+        return canvas.create_rectangle(self.dimension(bbox), **style)
 
     def intersection(self, bbox, end):
         xo0, yo0, xo1, yo1 = bbox
@@ -154,6 +151,24 @@ class Rectangle(Shape):
 
         return (xoc + dox if xec > xoc else xoc - dox,
                 yoc + doy if yec > yoc else yoc - doy)
+
+    def dimension(self, bbox):
+        x0l, y0l, x1l, y1l = bbox
+        xc, yc = (x1l + x0l) / 2, (y1l + y0l) / 2
+
+        if x1l - x0l < self._size:
+            x0e = xc - self._size / 2
+            x1e = xc + self._size / 2
+        else:
+            x0e, x1e = x0l, x1l
+
+        if y1l - y0l < self._size:
+            y0e = yc - self._size / 2
+            y1e = yc + self._size / 2
+        else:
+            y0e, y1e = y0l, y1l
+
+        return x0e, y0e, x1e, y1e
 
 
 class GraphElement:
@@ -325,6 +340,11 @@ class GraphElement:
         """
         return self._label
 
+    @label.setter
+    def label(self, value):
+        self._label = value
+        self.refresh()
+
     def refresh(self):
         """
         Refresh the appearance of this element on canvas.
@@ -338,6 +358,30 @@ class GraphElement:
         for transformer in canvas.transformers:
             transformer(self, style)
 
+        # Update label
+        xc, yc = self.center()
+        if self._label == "":
+            # Remove labelhandle if needed
+            if self._labelhandle is not None:
+                canvas._delete_handle(self._labelhandle)
+            # Set bbox as xc, yc, xc, yc
+            bbox = (xc, yc, xc, yc)
+        else:
+            # draw labelhandle if needed
+            if self._labelhandle is None:
+                self._labelhandle = canvas.create_text(xc,
+                                                       yc,
+                                                       text=self._label)
+                canvas.elements[self._labelhandle] = self
+            # or change text
+            else:
+                canvas.itemconfig(self._labelhandle, text=self._label)
+            # Set bbox as text bbox
+            bbox = canvas.bbox(self._labelhandle)
+        # Update shape for new bbox
+        canvas.coords(self._handle, self.shape.dimension(bbox))
+
+        # Update style
         canvas.itemconfig(self._handle, style.shape)
         if self._labelhandle is not None:
             canvas.itemconfig(self._labelhandle, style.text)

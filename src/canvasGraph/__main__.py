@@ -1,7 +1,7 @@
 import tkinter as tk
 import random
 from .canvas import CanvasFrame
-from .mouse import CreatingMouse
+from .mouse import Mouse, CreatingMouse
 from .layout import OneStepForceBasedLayout
 from .graph import Vertex, Edge
 
@@ -65,6 +65,55 @@ if __name__ == "__main__":
 
 
     frame.canvas.bind("k", add_edge)
+
+
+    class ChangeLabelDialog(tk.Toplevel):
+        def __init__(self, element, parent, **config):
+            super().__init__(parent, **config)
+            self.title = "Change label"
+            self.lift()
+            self.resizable(False, False)
+
+            mainframe = tk.Frame(self)
+            mainframe.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            mainframe.columnconfigure(0, weight=1)
+            mainframe.rowconfigure(0, weight=1)
+
+            label_var = tk.StringVar()
+            label_var.set(element.label)
+
+            tk.Label(mainframe, text="Label").grid(column=1,
+                                                   row=1,
+                                                   sticky=tk.W)
+
+            label_entry = tk.Entry(mainframe, width=7, textvariable=label_var)
+            label_entry.grid(column=2, row=1, sticky=tk.E)
+
+            def replace_label(*args):
+                element.label = label_var.get()
+                frame.canvas.refresh()
+                self.destroy()
+
+            tk.Button(mainframe,
+                      text="Calculate",
+                      command=replace_label).grid(column=2,
+                                                  row=2,
+                                                  sticky=(tk.W, tk.E))
+
+            for child in mainframe.winfo_children():
+                child.grid_configure(padx=5, pady=5)
+
+            label_entry.focus()
+
+
+    class LabelEditingMouse(Mouse):
+        def released(self, canvas, event):
+            element = canvas.current_element()
+            if element is not None:
+                ChangeLabelDialog(element, canvas)
+            return False
+
+    frame.canvas.register_mouse(LabelEditingMouse(), "2", "")
     # -------------------------------------------------------------------------
 
     root.mainloop()

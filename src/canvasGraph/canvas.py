@@ -269,9 +269,10 @@ class CanvasGraph(tk.Canvas):
         """
         Refresh all elements of this canvas.
         """
-        elements = set(self.elements.values())
-        for element in elements:
-            element.refresh()
+        for vertex in self.vertices:
+            vertex.refresh()
+        for edge in self.edges:
+            edge.refresh()
 
     def register_mouse(self, mouse, button, modifier):
         """
