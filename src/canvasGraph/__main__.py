@@ -114,6 +114,11 @@ if __name__ == "__main__":
             return False
 
     frame.canvas.register_mouse(LabelEditingMouse(), "2", "")
+
+
+    def random_label(_, style):
+        style["label"] = str(random.randint(0, 100))
+    frame.canvas.register_transformer(random_label)
     # -------------------------------------------------------------------------
 
     root.mainloop()

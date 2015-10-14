@@ -355,8 +355,11 @@ class GraphElement:
         canvas = self._canvas
 
         style = deepcopy(self.style)
+        style["label"] = self._label
         for transformer in canvas.transformers:
             transformer(self, style)
+        if "label" in style:
+            self._label = style["label"]
 
         # Update label
         xc, yc = self.center()
@@ -529,8 +532,4 @@ class Edge(GraphElement):
 
     def refresh(self):
         super(Edge, self).refresh()
-        style = deepcopy(self.style)
-        for transformer in self._canvas.transformers:
-            transformer(self, style)
-        self._canvas.itemconfig(self._arrowhandle, style.arrow)
         self._refresh_arrows()
