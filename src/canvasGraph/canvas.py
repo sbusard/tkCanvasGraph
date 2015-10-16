@@ -364,6 +364,20 @@ class CanvasGraph(tk.Canvas):
         and a style as arguments and updating the style.
 
         :param transformer: the transformer to register.
+
+        The transformer has access to and can change:
+        * the label of the element: style["label"].
+          The transformer should not delete the "label" key and its value
+          should be a string.
+        * the shape of the element: style["shape"].
+          The transformer should not delete the "shape" key and its value
+          should be a valid shape (sub-class of graph.Shape).
+        * the style of label: style["label_style"].
+          The style of the label should be a dictionary of valid tkinter canvas
+          text configurations.
+        * the style of the shape: style["shape_style"].
+          The style of the shape should be a dictionary of valid tkinter canvas
+          shape configurations.
         """
         self.transformers.append(transformer)
 

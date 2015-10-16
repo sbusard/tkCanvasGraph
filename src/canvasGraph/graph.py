@@ -174,18 +174,6 @@ class Rectangle(Shape):
 class GraphElement:
     """
     An element of a graph, composed of a shape and text in it.
-    
-    The style of the element can be changed at any time by updating
-    element.style.common dictionary:
-        * style.common is the common style: it is applied to any state
-          of the element and is overriden by the style for the current state.
-    This dictionary contains three other dictionaries:
-        * shape defines the appearance of the shape of the element;
-        * text defines the appearance of the label of the element.
-    
-    To update the style, just give the wanted value to the attribute of these
-    dictionaries. For example, to change the fill color of the element, set:
-        style.selected.shape.fill = "yellow"
     """
 
     def __init__(self, canvas, shape, label="", tooltip=None):
@@ -199,8 +187,6 @@ class GraphElement:
         :param tooltip: if not None, a string that will be used as a tooltip.
         """
         self._canvas = canvas
-        self.shape = shape
-        self._label = label
         self.tooltip = tooltip
 
         # Keep track of handle and handle of labels in canvas
@@ -209,8 +195,10 @@ class GraphElement:
 
         # Common style
         self.style = AttrDict()
+        self.style.shape = shape
         self.style.shape_style = AttrDict()
         self.style.shape_style.fill = "white"
+        self.style.label = label
         self.style.label_style = AttrDict()
         self.style.label_style.justify = tk.CENTER
 
@@ -236,16 +224,18 @@ class GraphElement:
         canvas = self._canvas
 
         # Add label on canvas and store handle
-        if self.label != "":
+        if self.style["label"] != "":
             self._labelhandle = canvas.create_text(x, y,
-                                                   text=self.label)
+                                                   text=self.style["label"])
             bbox = canvas.bbox(self._labelhandle)
         else:
             self._labelhandle = None
             bbox = (x, y, x, y)
 
         # Draw on canvas and store handle
-        self._handle = self.shape.draw(canvas, bbox, self.style.shape_style)
+        self._handle = self.style["shape"].draw(canvas,
+                                                bbox,
+                                                self.style.shape_style)
 
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
@@ -338,11 +328,11 @@ class GraphElement:
         """
         The label of this element.
         """
-        return self._label
+        return self.style["label"]
 
     @label.setter
     def label(self, value):
-        self._label = value
+        self.style["label"] = value
         self.refresh()
 
     def refresh(self):
@@ -354,15 +344,23 @@ class GraphElement:
         assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
 
-        style = deepcopy(self.style)
-        style["label"] = self._label
+        old_label = self.style["label"]
+        old_shape = self.style["shape"]
+
+        style = self.style
         for transformer in canvas.transformers:
             transformer(self, style)
 
+        xc, yc = self.center()
+
+        if old_label:
+            label_bbox = canvas.bbox(self._labelhandle)
+        else:
+            label_bbox = (xc, yc, xc, yc)
+
         # Update label
-        if style["label"] != self._label:
+        if style["label"] != old_label:
             new_label = style["label"]
-            xc, yc = self.center()
             if new_label == "":
                 # Remove labelhandle if needed
                 if self._labelhandle is not None:
@@ -381,14 +379,25 @@ class GraphElement:
                     canvas.itemconfig(self._labelhandle, text=new_label)
                 # Set bbox as text bbox
                 label_bbox = canvas.bbox(self._labelhandle)
-            self._label = new_label
             # Update shape for new bbox
-            canvas.coords(self._handle, self.shape.dimension(label_bbox))
+            canvas.coords(self._handle,
+                          self.style["shape"].dimension(label_bbox))
+
+        # Update shape
+        if style["shape"] != old_shape:
+            new_shape = style["shape"]
+            canvas._delete_handle(self._handle)
+            self._handle = self.style["shape"].draw(canvas,
+                                                    label_bbox,
+                                                    style["shape_style"])
+            canvas.elements[self._handle] = self
+            if style["label"]:
+                canvas.tag_raise(self._labelhandle)
 
         # Update style
-        canvas.itemconfig(self._handle, style.shape_style)
+        canvas.itemconfig(self._handle, style["shape_style"])
         if self._labelhandle is not None:
-            canvas.itemconfig(self._labelhandle, style.label_style)
+            canvas.itemconfig(self._labelhandle, style["label_style"])
 
     def bind(self, event, callback, add=None):
         """
@@ -504,25 +513,25 @@ class Edge(GraphElement):
         """
         assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
-        style = deepcopy(self.style)
-        for transformer in canvas.transformers:
-            transformer(self, style)
 
         # Draw line: from origin to label and from label to end
-        xo, yo = self.origin.shape.intersection(self.origin.bbox(),
-                                                self.center())
-        xol, yol = self.shape.intersection(self.bbox(), self.origin.center())
-        xel, yel = self.shape.intersection(self.bbox(), self.end.center())
-        xe, ye = self.end.shape.intersection(self.end.bbox(), self.center())
+        xo, yo = self.origin.style["shape"].intersection(self.origin.bbox(),
+                                                         self.center())
+        xol, yol = self.style["shape"].intersection(self.bbox(),
+                                                    self.origin.center())
+        xel, yel = self.style["shape"].intersection(self.bbox(),
+                                                    self.end.center())
+        xe, ye = self.end.style["shape"].intersection(self.end.bbox(),
+                                                      self.center())
 
         if self._arrowhandle is not None:
             canvas.coords(self._arrowhandle, *(xo, yo, xol, yol,
                                                xel, yel, xe, ye))
-            canvas.itemconfig(self._arrowhandle, style.arrow_style)
+            canvas.itemconfig(self._arrowhandle, self.style.arrow_style)
         else:
             self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
                                                     xel, yel, xe, ye),
-                                                   **style.arrow_style)
+                                                   **self.style.arrow_style)
         canvas.tag_raise(self._handle)
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)

@@ -3,7 +3,7 @@ import random
 from .canvas import CanvasFrame
 from .mouse import Mouse, CreatingMouse
 from .layout import OneStepForceBasedLayout
-from .graph import Vertex, Edge
+from .graph import Vertex, Edge, Rectangle, Oval
 
 if __name__ == "__main__":
     # Start a new window with canvas graph and creating mouse
@@ -120,6 +120,10 @@ if __name__ == "__main__":
         style["label"] = str(random.randint(0, 100))
     frame.canvas.register_transformer(random_label)
 
+
+    def random_shape(_, style):
+        style["shape"] = random.choice([Rectangle(), Oval()])
+    frame.canvas.register_transformer(random_shape)
 
 
     def rainbow(element, style):
