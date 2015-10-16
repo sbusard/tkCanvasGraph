@@ -402,6 +402,8 @@ class InteractiveCanvasGraph(CanvasGraph):
         def selected(element, style):
             if element in self.selected:
                 style["shape_style"]["fill"] = "yellow"
+            if element not in self.selected:
+                style["shape_style"]["fill"] = "white"
         self.register_transformer(selected)
 
         class SelectionObserver:
@@ -409,8 +411,7 @@ class InteractiveCanvasGraph(CanvasGraph):
                 self.canvas = canvas
 
             def update(self, _):
-                for e in self.canvas.elements.values():
-                    e.refresh()
+                self.canvas.refresh()
 
         observer = SelectionObserver(self)
         self.selected.register(observer)
