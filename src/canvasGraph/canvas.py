@@ -31,7 +31,7 @@ class CanvasGraph(tk.Canvas):
         super(CanvasGraph, self).__init__(parent, **config)
 
         # Elements indexed by their handles
-        self.elements = {}
+        self.handles = {}
 
         self.vertices = set()
         self.edges = set()
@@ -82,14 +82,15 @@ class CanvasGraph(tk.Canvas):
                        (see layout.Layout).
         """
         self.layouting.set(False)
-        vertices = {element: element.center()
-                    for element in self.elements.values()}
+        vertices = {element: element.center
+                    for element in self.handles.values()}
         edges = set()
         for edge in self.edges:
             edges.add((edge.origin, edge))
             edges.add((edge, edge.end))
         np = self._get_positions(layout, vertices, edges)
         self._apply_positions(np)
+        self.refresh()
 
     def apply_interactive_layout(self, layout):
         """
@@ -107,8 +108,8 @@ class CanvasGraph(tk.Canvas):
             if not self.layouting.get():
                 return
 
-            vertices = {element: element.center()
-                        for element in self.elements.values()}
+            vertices = {element: element.center
+                        for element in self.handles.values()}
             edges = set()
             for edge in self.edges:
                 edges.add((edge.origin, edge))
@@ -117,6 +118,7 @@ class CanvasGraph(tk.Canvas):
             np = self._get_positions(layout, vertices, edges)
 
             self._apply_positions(np)
+            self.refresh()
 
             if self.layouting.get():
                 self.after(self.layout_interval, iter_layout)
@@ -147,8 +149,8 @@ class CanvasGraph(tk.Canvas):
         :return: the element corresponding to the given handle, if any,
                  otherwise None.
         """
-        if handle in self.elements:
-            return self.elements[handle]
+        if handle in self.handles:
+            return self.handles[handle]
         else:
             return None
 
@@ -176,8 +178,8 @@ class CanvasGraph(tk.Canvas):
                 position = x0 + x, y0 + y
 
         element.draw(*position)
-        for handle in element.handles():
-            self.elements[handle] = element
+        for handle in element.handles:
+            self.handles[handle] = element
         self._update_scrollregion()
         self.refresh()
 
@@ -204,8 +206,8 @@ class CanvasGraph(tk.Canvas):
         :param position: if not None, an x,y tuple.
         """
         if position is None:
-            xo, yo = edge.origin.center()
-            xe, ye = edge.end.center()
+            xo, yo = edge.origin.center
+            xe, ye = edge.end.center
             position = ((xo + xe) / 2, (yo + ye) / 2)
         self._add_element(edge, position)
         self.edges.add(edge)
@@ -216,7 +218,7 @@ class CanvasGraph(tk.Canvas):
 
         :param element: the element to delete.
         """
-        for handle in element.handles():
+        for handle in element.handles:
             self._delete_handle(handle)
 
         # Discard from other sets
@@ -232,8 +234,8 @@ class CanvasGraph(tk.Canvas):
         :param handle: the handle to delete.
         """
         self.delete(handle)
-        if handle in self.elements:
-            del self.elements[handle]
+        if handle in self.handles:
+            del self.handles[handle]
 
     def move_elements(self, elements, dx, dy):
         """
@@ -432,9 +434,9 @@ class InteractiveCanvasGraph(CanvasGraph):
 
         # Mouses for the canvas
         sm = SelectingMouse(selection=self.selected,
-                            elements=self.elements.values())
+                            elements=self.handles.values())
         smm = SelectionModifyingMouse(selection=self.selected,
-                                      elements=self.elements.values())
+                                      elements=self.handles.values())
         mm = MovingMouse(self.selected)
         self.register_mouse(sm, "1", "")
         self.register_mouse(smm, "1", "Shift")

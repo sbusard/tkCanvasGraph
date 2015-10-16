@@ -131,7 +131,7 @@ if __name__ == "__main__":
         bbox = frame.canvas.bbox("all")
         if bbox:
             xlu, ylu, xdr, ydr = bbox
-            xc, yc = element.center()
+            xc, yc = element.center
             # Color border from red to blue, depending on the relative
             # horizontal position; left is red, right is blue
             red = int(255 * (xc - xlu) / (xdr - xlu))

@@ -41,6 +41,7 @@ class GraphElement:
         self.style.label_style = AttrDict()
         self.style.label_style.justify = tk.CENTER
 
+    @property
     def handles(self):
         """
         Return the handles of this element.
@@ -51,6 +52,62 @@ class GraphElement:
         if self._labelhandle is not None:
             handles.append(self._labelhandle)
         return tuple(handles)
+
+    @property
+    def center(self):
+        """
+        Return the center point of this element.
+
+        :return: the (x, y) coordinates of the center point.
+
+        This element must be already drawn on its canvas.
+        """
+        assert self._handle is not None, "The element is not drawn yet"
+        x0, y0, x1, y1 = self._canvas.coords(self._handle)
+        return (x0 + x1) / 2, (y0 + y1) / 2
+
+    @property
+    def bbox(self):
+        """
+        Return the bounding box of this element.
+        :return: the (x0, y0, x1, y1) coordinates of the bounding box.
+
+        This element must be already drawn on its canvas.
+        """
+        assert self._handle is not None, "The element is not drawn yet"
+        return self._canvas.bbox(self._handle)
+
+    @property
+    def dimensions(self):
+        """
+        Return this element width and height.
+
+        :return: the (width, height) pair.
+
+        This element must be already drawn on its canvas.
+        """
+        assert self._handle is not None, "The element is not drawn yet"
+        x0, y0, x1, y1 = self.bbox
+        return x1 - x0, y1 - y0
+
+    @property
+    def label(self):
+        """
+        The label of this element.
+        """
+        return self.style["label"]
+
+    @label.setter
+    def label(self, value):
+        self.style["label"] = value
+        self.refresh()
+
+    @property
+    def shape(self):
+        """
+        The shape of this element.
+        """
+        return self.style["shape"]
 
     def draw(self, x, y):
         """
@@ -80,11 +137,75 @@ class GraphElement:
             canvas.tag_raise(self._labelhandle)
 
         if self.tooltip is not None:
-            for handle in self.handles():
+            for handle in self.handles:
                 CanvasToolTip(canvas, handle, follow_mouse=1,
                               text=self.tooltip)
 
         self.refresh()
+
+    def refresh(self):
+        """
+        Refresh the appearance of this element on canvas.
+
+        This element must be already drawn on its canvas.
+        """
+        assert self._handle is not None, "The element is not drawn yet"
+        canvas = self._canvas
+
+        old_label = self.style["label"]
+        old_shape = self.style["shape"]
+
+        style = self.style
+        for transformer in canvas.transformers:
+            transformer(self, style)
+
+        xc, yc = self.center
+
+        if old_label:
+            label_bbox = canvas.bbox(self._labelhandle)
+        else:
+            label_bbox = (xc, yc, xc, yc)
+
+        # Update label
+        if style["label"] != old_label:
+            new_label = style["label"]
+            if new_label == "":
+                # Remove labelhandle if needed
+                if self._labelhandle is not None:
+                    canvas._delete_handle(self._labelhandle)
+                # Set bbox as xc, yc, xc, yc
+                label_bbox = (xc, yc, xc, yc)
+            else:
+                # draw labelhandle if needed
+                if self._labelhandle is None:
+                    self._labelhandle = canvas.create_text(xc,
+                                                           yc,
+                                                           text=new_label)
+                    canvas.handles[self._labelhandle] = self
+                # or change text
+                else:
+                    canvas.itemconfig(self._labelhandle, text=new_label)
+                # Set bbox as text bbox
+                label_bbox = canvas.bbox(self._labelhandle)
+            # Update shape for new bbox
+            canvas.coords(self._handle,
+                          self.style["shape"].dimension(label_bbox))
+
+        # Update shape
+        if style["shape"] != old_shape:
+            new_shape = style["shape"]
+            canvas._delete_handle(self._handle)
+            self._handle = self.style["shape"].draw(canvas,
+                                                    label_bbox,
+                                                    style["shape_style"])
+            canvas.handles[self._handle] = self
+            if style["label"]:
+                canvas.tag_raise(self._labelhandle)
+
+        # Update style
+        canvas.itemconfig(self._handle, style["shape_style"])
+        if self._labelhandle is not None:
+            canvas.itemconfig(self._labelhandle, style["label_style"])
 
     def move(self, dx, dy):
         """
@@ -114,7 +235,7 @@ class GraphElement:
         This element must be already drawn on its canvas.
         """
         assert self._handle is not None, "The element is not drawn yet"
-        curx, cury = self.center()
+        curx, cury = self.center
         dx = x - curx
         dy = y - cury
         self.move(dx, dy)
@@ -127,116 +248,6 @@ class GraphElement:
         self._canvas.delete_element(self)
         self._handle = None
         self._labelhandle = None
-
-    def center(self):
-        """
-        Return the center point of this element.
-
-        :return: the (x, y) coordinates of the center point.
-
-        This element must be already drawn on its canvas.
-        """
-        assert self._handle is not None, "The element is not drawn yet"
-        x0, y0, x1, y1 = self._canvas.coords(self._handle)
-        return (x0 + x1) / 2, (y0 + y1) / 2
-
-    def bbox(self):
-        """
-        Return the bounding box of this element.
-        :return: the (x0, y0, x1, y1) coordinates of the bounding box.
-
-        This element must be already drawn on its canvas.
-        """
-        assert self._handle is not None, "The element is not drawn yet"
-        return self._canvas.bbox(self._handle)
-
-    def dimensions(self):
-        """
-        Return this element width and height.
-
-        :return: the (width, height) pair.
-
-        This element must be already drawn on its canvas.
-        """
-        assert self._handle is not None, "The element is not drawn yet"
-        x0, y0, x1, y1 = self.bbox()
-        return x1 - x0, y1 - y0
-
-    @property
-    def label(self):
-        """
-        The label of this element.
-        """
-        return self.style["label"]
-
-    @label.setter
-    def label(self, value):
-        self.style["label"] = value
-        self.refresh()
-
-    def refresh(self):
-        """
-        Refresh the appearance of this element on canvas.
-
-        This element must be already drawn on its canvas.
-        """
-        assert self._handle is not None, "The element is not drawn yet"
-        canvas = self._canvas
-
-        old_label = self.style["label"]
-        old_shape = self.style["shape"]
-
-        style = self.style
-        for transformer in canvas.transformers:
-            transformer(self, style)
-
-        xc, yc = self.center()
-
-        if old_label:
-            label_bbox = canvas.bbox(self._labelhandle)
-        else:
-            label_bbox = (xc, yc, xc, yc)
-
-        # Update label
-        if style["label"] != old_label:
-            new_label = style["label"]
-            if new_label == "":
-                # Remove labelhandle if needed
-                if self._labelhandle is not None:
-                    canvas._delete_handle(self._labelhandle)
-                # Set bbox as xc, yc, xc, yc
-                label_bbox = (xc, yc, xc, yc)
-            else:
-                # draw labelhandle if needed
-                if self._labelhandle is None:
-                    self._labelhandle = canvas.create_text(xc,
-                                                           yc,
-                                                           text=new_label)
-                    canvas.elements[self._labelhandle] = self
-                # or change text
-                else:
-                    canvas.itemconfig(self._labelhandle, text=new_label)
-                # Set bbox as text bbox
-                label_bbox = canvas.bbox(self._labelhandle)
-            # Update shape for new bbox
-            canvas.coords(self._handle,
-                          self.style["shape"].dimension(label_bbox))
-
-        # Update shape
-        if style["shape"] != old_shape:
-            new_shape = style["shape"]
-            canvas._delete_handle(self._handle)
-            self._handle = self.style["shape"].draw(canvas,
-                                                    label_bbox,
-                                                    style["shape_style"])
-            canvas.elements[self._handle] = self
-            if style["label"]:
-                canvas.tag_raise(self._labelhandle)
-
-        # Update style
-        canvas.itemconfig(self._handle, style["shape_style"])
-        if self._labelhandle is not None:
-            canvas.itemconfig(self._labelhandle, style["label_style"])
 
     def bind(self, event, callback, add=None):
         """
@@ -251,7 +262,7 @@ class GraphElement:
         This element must be already drawn on its canvas.
         """
         assert self._handle is not None, "The element is not drawn yet"
-        for handle in self.handles():
+        for handle in self.handles:
             self._canvas.tag_bind(handle, event, callback, add)
 
     def unbind(self, event):
@@ -263,7 +274,7 @@ class GraphElement:
         This element must be already drawn on its canvas.
         """
         assert self._handle is not None, "The element is not drawn yet"
-        for handle in self.handles():
+        for handle in self.handles:
             self._canvas.tag_unbind(handle, event)
 
 
@@ -324,6 +335,7 @@ class Edge(GraphElement):
         self.style.arrow_style = AttrDict()
         self.style.arrow_style.arrow = "last"
 
+    @property
     def handles(self):
         """
         Return the handles of this edge.
@@ -331,9 +343,9 @@ class Edge(GraphElement):
         :return: the set of handles taking part in this edge.
         """
         if self._arrowhandle is not None:
-            return super(Edge, self).handles() + (self._arrowhandle,)
+            return super(Edge, self).handles + (self._arrowhandle,)
         else:
-            return super(Edge, self).handles()
+            return super(Edge, self).handles
 
     def delete(self):
         """
@@ -354,14 +366,14 @@ class Edge(GraphElement):
         canvas = self._canvas
 
         # Draw line: from origin to label and from label to end
-        xo, yo = self.origin.style["shape"].intersection(self.origin.bbox(),
-                                                         self.center())
-        xol, yol = self.style["shape"].intersection(self.bbox(),
-                                                    self.origin.center())
-        xel, yel = self.style["shape"].intersection(self.bbox(),
-                                                    self.end.center())
-        xe, ye = self.end.style["shape"].intersection(self.end.bbox(),
-                                                      self.center())
+        xo, yo = self.origin.style["shape"].intersection(self.origin.bbox,
+                                                         self.center)
+        xol, yol = self.style["shape"].intersection(self.bbox,
+                                                    self.origin.center)
+        xel, yel = self.style["shape"].intersection(self.bbox,
+                                                    self.end.center)
+        xe, ye = self.end.style["shape"].intersection(self.end.bbox,
+                                                      self.center)
 
         if self._arrowhandle is not None:
             canvas.coords(self._arrowhandle, *(xo, yo, xol, yol,

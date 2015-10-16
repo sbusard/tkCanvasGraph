@@ -64,9 +64,9 @@ class OneStepForceBasedLayout(Layout):
         """
 
         xvc, yvc = positions[vertex]
-        vw, vh = vertex.dimensions()
+        vw, vh = vertex.dimensions
         xoc, yoc = positions[other]
-        ow, oh = other.dimensions()
+        ow, oh = other.dimensions
 
         xv0, yv0, xv1, yv1 = (
             xvc - vw / 2, yvc - vh / 2, xvc + vw / 2, yvc + vh / 2)
