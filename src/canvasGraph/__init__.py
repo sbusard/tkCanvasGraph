@@ -1,1 +1,2 @@
-from .canvas import CanvasGraph, CanvasFrame, Vertex, Edge
+from .canvas import CanvasGraph, CanvasFrame
+from .graph import Vertex, Edge

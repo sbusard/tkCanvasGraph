@@ -8,6 +8,8 @@ In addition to the abstract mouse that does nothing, this module gives access
 to several pre-defined mouses.
 """
 
+from .graph import Vertex, Edge
+
 __all__ = ["Mouse", "SelectingMouse", "SelectionModifyingMouse", "MovingMouse",
            "CreatingMouse"]
 
@@ -254,8 +256,6 @@ class CreatingMouse(Mouse):
         self.starting = None
 
     def pressed(self, canvas, event):
-        from .canvas import Vertex
-
         element = canvas.current_element()
 
         # if element exists and is a vertex,
@@ -280,8 +280,6 @@ class CreatingMouse(Mouse):
             return True
 
     def released(self, canvas, event):
-        from .canvas import Edge
-
         if self.starting is not None:
             element = canvas.current_element()
 

@@ -1,6 +1,7 @@
 import tkinter as tk
 import random
-from .canvas import CanvasFrame, Vertex, Edge
+from .canvas import CanvasFrame
+from .graph import Vertex, Edge
 from .mouse import Mouse, CreatingMouse
 from .layout import OneStepForceBasedLayout
 from .shape import Rectangle, Oval
