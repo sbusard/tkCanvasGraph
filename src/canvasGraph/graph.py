@@ -358,31 +358,32 @@ class GraphElement:
         style["label"] = self._label
         for transformer in canvas.transformers:
             transformer(self, style)
-        if "label" in style:
-            self._label = style["label"]
 
         # Update label
-        xc, yc = self.center()
-        if self._label == "":
-            # Remove labelhandle if needed
-            if self._labelhandle is not None:
-                canvas._delete_handle(self._labelhandle)
-            # Set bbox as xc, yc, xc, yc
-            bbox = (xc, yc, xc, yc)
-        else:
-            # draw labelhandle if needed
-            if self._labelhandle is None:
-                self._labelhandle = canvas.create_text(xc,
-                                                       yc,
-                                                       text=self._label)
-                canvas.elements[self._labelhandle] = self
-            # or change text
+        if style["label"] != self._label:
+            new_label = style["label"]
+            xc, yc = self.center()
+            if new_label == "":
+                # Remove labelhandle if needed
+                if self._labelhandle is not None:
+                    canvas._delete_handle(self._labelhandle)
+                # Set bbox as xc, yc, xc, yc
+                label_bbox = (xc, yc, xc, yc)
             else:
-                canvas.itemconfig(self._labelhandle, text=self._label)
-            # Set bbox as text bbox
-            bbox = canvas.bbox(self._labelhandle)
-        # Update shape for new bbox
-        canvas.coords(self._handle, self.shape.dimension(bbox))
+                # draw labelhandle if needed
+                if self._labelhandle is None:
+                    self._labelhandle = canvas.create_text(xc,
+                                                           yc,
+                                                           text=new_label)
+                    canvas.elements[self._labelhandle] = self
+                # or change text
+                else:
+                    canvas.itemconfig(self._labelhandle, text=new_label)
+                # Set bbox as text bbox
+                label_bbox = canvas.bbox(self._labelhandle)
+            self._label = new_label
+            # Update shape for new bbox
+            canvas.coords(self._handle, self.shape.dimension(label_bbox))
 
         # Update style
         canvas.itemconfig(self._handle, style.shape)
