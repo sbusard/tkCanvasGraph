@@ -16,15 +16,15 @@ class Layout:
     A graph layout.
     """
 
-    def apply(self, canvas, positions, edges, fixed=None):
+    def apply(self, canvas, vertices, edges, fixed=None):
         """
-        Apply this layout on canvas, with positions of elements.
+        Apply this layout on canvas.
+        Move the given vertices and edges at their new position.
         
         :param canvas: the canvas on which operate;
-        :param positions: a dictionary of elements -> x,y positions;
-        :param edges: a list of couples representing the edges;
+        :param vertices: the set of vertices to move;
+        :param edges: the set of edges to move;
         :param fixed: a set of elements that must remain at given position.
-        :return: a dictionary of new positions for elements of positions.
         """
         raise NotImplementedError("Should be implemented by subclasses.")
 
@@ -157,7 +157,7 @@ class OneStepForceBasedLayout(Layout):
 
         return fx, fy
 
-    def _apply_and_get_force(self, _, positions, edges, fixed=None):
+    def _apply_and_get_force(self, _, positions, links, fixed=None):
         """
         Apply this layout on positions and edges, keeping fixed elements in
         place, and return the new positions as well as the average force on
@@ -165,7 +165,7 @@ class OneStepForceBasedLayout(Layout):
 
         :param canvas: the canvas on which operate;
         :param positions: a dictionary of elements -> x,y positions;
-        :param edges: a list of couples representing the edges;
+        :param links: a list of couples representing the edges;
         :param fixed: a set of elements that must remain at given position.
         :return: a dictionary of new positions for elements of positions
                  and the average force applied on each element.
@@ -187,7 +187,7 @@ class OneStepForceBasedLayout(Layout):
                     fy += cfy
 
             # Spring forces
-            for origin, end in edges:
+            for origin, end in links:
                 if origin == vertex or end == vertex:
                     if origin == vertex:
                         other = end
@@ -222,12 +222,21 @@ class OneStepForceBasedLayout(Layout):
                 sum_forces / len(new_positions)
                 if len(new_positions) > 0 else 0)
 
-    def apply(self, canvas, positions, edges, fixed=None):
+    def apply(self, canvas, vertices, edges, fixed=None):
+        positions = {element: element.center
+                     for element in vertices | edges}
+        links = set()
+        for edge in edges:
+            links.add((edge.origin, edge))
+            links.add((edge, edge.end))
+
         np, _ = self._apply_and_get_force(canvas,
                                           positions,
-                                          edges,
+                                          links,
                                           fixed=fixed)
-        return np
+
+        for element, position in np.items():
+            element.move_to(*position)
 
 
 class ForceBasedLayout(OneStepForceBasedLayout):
@@ -241,15 +250,23 @@ class ForceBasedLayout(OneStepForceBasedLayout):
         self.forceThreshold = 0.001
 
     def apply(self, canvas, vertices, edges, fixed=None):
-        np = vertices
+        positions = {element: element.center
+                     for element in vertices | edges}
+        links = set()
+        for edge in edges:
+            links.add((edge.origin, edge))
+            links.add((edge, edge.end))
+
         for i in range(self.iterationNumber):
-            np, sf = super()._apply_and_get_force(canvas,
-                                                  np,
-                                                  edges,
-                                                  fixed=fixed)
+            positions, sf = super()._apply_and_get_force(canvas,
+                                                         positions,
+                                                         links,
+                                                         fixed=fixed)
             if sf < self.forceThreshold:
                 break
-        return np
+
+        for element, position in positions.items():
+            element.move_to(*position)
 
 
 try:
@@ -267,11 +284,18 @@ class DotLayout:
         if pydot is None:
             raise ImportError("Cannot use dot layout, pydot is not installed.")
 
+        positions = {element: element.center
+                     for element in vertices | edges}
+        links = set()
+        for edge in edges:
+            links.add((edge.origin, edge))
+            links.add((edge, edge.end))
+
         # ----- CREATE DOT GRAPH -----
         # Mark all states
         ids = {}
         curid = 0
-        for v in vertices:
+        for v in positions:
             ids[v] = "s" + str(curid)
             curid += 1
 
@@ -282,7 +306,7 @@ class DotLayout:
             dot += (ids[v] + " " + "[label=\"" + v.label + "\"]" + ";\n")
 
         # For each state, add each transition to the representation
-        for origin, end in edges:
+        for origin, end in links:
             dot += (ids[origin] + "->" + ids[end] + ";\n")
 
         dot += "}"
@@ -300,4 +324,5 @@ class DotLayout:
             pos = pos.split(',')
             new_positions[vertex] = int(float(pos[0])), int(float(pos[1]))
 
-        return new_positions
+        for element, position in positions.items():
+            element.move_to(*position)

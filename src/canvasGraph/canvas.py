@@ -50,30 +50,6 @@ class CanvasGraph(tk.Canvas):
         self.layouting.set(False)
         self.layout_interval = 25
 
-    def _get_positions(self, layout, vertices, edges):
-        """
-        Return the positions resulting of applying layout on vertices and
-        edges.
-
-        :param layout: the layout to apply;
-        :param vertices: the vertices and their center position;
-        :param edges: the edges couples (origin, end);
-        :return: the new positions of vertices.
-        """
-        return layout.apply(self, vertices, edges)
-
-    def _apply_positions(self, positions):
-        """
-        Move all elements of positions at their new position.
-
-        :param positions: a dictionary of element -> x,y positions.
-        """
-        for element in positions.keys() & self.vertices:
-            element.move_to(*positions[element])
-        for element in positions.keys() & self.edges:
-            element.move_to(*positions[element])
-        self._update_scrollregion()
-
     def apply_layout(self, layout):
         """
         Apply the given layout on this canvas.
@@ -82,14 +58,7 @@ class CanvasGraph(tk.Canvas):
                        (see layout.Layout).
         """
         self.layouting.set(False)
-        vertices = {element: element.center
-                    for element in self.handles.values()}
-        edges = set()
-        for edge in self.edges:
-            edges.add((edge.origin, edge))
-            edges.add((edge, edge.end))
-        np = self._get_positions(layout, vertices, edges)
-        self._apply_positions(np)
+        layout.apply(self, self.vertices, self.edges)
         self.refresh()
 
     def apply_interactive_layout(self, layout):
@@ -108,16 +77,7 @@ class CanvasGraph(tk.Canvas):
             if not self.layouting.get():
                 return
 
-            vertices = {element: element.center
-                        for element in self.handles.values()}
-            edges = set()
-            for edge in self.edges:
-                edges.add((edge.origin, edge))
-                edges.add((edge, edge.end))
-
-            np = self._get_positions(layout, vertices, edges)
-
-            self._apply_positions(np)
+            layout.apply(self, self.vertices, self.edges)
             self.refresh()
 
             if self.layouting.get():
@@ -275,6 +235,7 @@ class CanvasGraph(tk.Canvas):
             vertex.refresh()
         for edge in self.edges:
             edge.refresh()
+        self._update_scrollregion()
 
     def register_mouse(self, mouse, button, modifier):
         """
@@ -442,8 +403,25 @@ class InteractiveCanvasGraph(CanvasGraph):
         self.register_mouse(smm, "1", "Shift")
         self.register_mouse(mm, "1", "")
 
-    def _get_positions(self, layout, vertices, edges):
-        return layout.apply(self, vertices, edges, fixed=self.selected)
+    def apply_layout(self, layout):
+        self.layouting.set(False)
+        layout.apply(self, self.vertices, self.edges, fixed=self.selected)
+        self.refresh()
+
+    def apply_interactive_layout(self, layout):
+        def iter_layout():
+            if not self.layouting.get():
+                return
+
+            layout.apply(self, self.vertices, self.edges, fixed=self.selected)
+            self.refresh()
+
+            if self.layouting.get():
+                self.after(self.layout_interval, iter_layout)
+
+        if not self.layouting.get():
+            self.layouting.set(True)
+        self.after(self.layout_interval, iter_layout)
 
     def delete_element(self, element):
         super(InteractiveCanvasGraph, self).delete_element(element)
@@ -540,5 +518,3 @@ class CanvasFrame(tk.Frame):
             self.canvas.yview_scroll(-1 * event.delta, "units")
 
         self.canvas.bind("<MouseWheel>", on_mousewheel)
-
-
