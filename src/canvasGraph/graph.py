@@ -209,10 +209,10 @@ class GraphElement:
 
         # Common style
         self.style = AttrDict()
-        self.style.shape = AttrDict()
-        self.style.shape.fill = "white"
-        self.style.text = AttrDict()
-        self.style.text.justify = tk.CENTER
+        self.style.shape_style = AttrDict()
+        self.style.shape_style.fill = "white"
+        self.style.label_style = AttrDict()
+        self.style.label_style.justify = tk.CENTER
 
     def handles(self):
         """
@@ -245,7 +245,7 @@ class GraphElement:
             bbox = (x, y, x, y)
 
         # Draw on canvas and store handle
-        self._handle = self.shape.draw(canvas, bbox, self.style.shape)
+        self._handle = self.shape.draw(canvas, bbox, self.style.shape_style)
 
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)
@@ -386,9 +386,9 @@ class GraphElement:
             canvas.coords(self._handle, self.shape.dimension(label_bbox))
 
         # Update style
-        canvas.itemconfig(self._handle, style.shape)
+        canvas.itemconfig(self._handle, style.shape_style)
         if self._labelhandle is not None:
-            canvas.itemconfig(self._labelhandle, style.text)
+            canvas.itemconfig(self._labelhandle, style.label_style)
 
     def bind(self, event, callback, add=None):
         """
@@ -473,8 +473,8 @@ class Edge(GraphElement):
         self._arrowhandle = None
 
         # Common style
-        self.style.arrow = AttrDict()
-        self.style.arrow.arrow = "last"
+        self.style.arrow_style = AttrDict()
+        self.style.arrow_style.arrow = "last"
 
     def handles(self):
         """
@@ -518,11 +518,11 @@ class Edge(GraphElement):
         if self._arrowhandle is not None:
             canvas.coords(self._arrowhandle, *(xo, yo, xol, yol,
                                                xel, yel, xe, ye))
-            canvas.itemconfig(self._arrowhandle, style.arrow)
+            canvas.itemconfig(self._arrowhandle, style.arrow_style)
         else:
             self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
                                                     xel, yel, xe, ye),
-                                                   **style.arrow)
+                                                   **style.arrow_style)
         canvas.tag_raise(self._handle)
         if self._labelhandle is not None:
             canvas.tag_raise(self._labelhandle)

@@ -40,12 +40,12 @@ if __name__ == "__main__":
 
     def added_vertex(element, style):
         if element.label and isinstance(element, Vertex):
-            style["shape"]["width"] = 4
+            style["shape_style"]["width"] = 4
     frame.canvas.register_transformer(added_vertex)
 
     def selected_vertex(element, style):
         if element.label and element in frame.canvas.selected:
-            style["shape"]["outline"] = "red"
+            style["shape_style"]["outline"] = "red"
     frame.canvas.register_transformer(selected_vertex)
 
     frame.canvas.bind("j", add_vertex)
@@ -119,6 +119,21 @@ if __name__ == "__main__":
     def random_label(_, style):
         style["label"] = str(random.randint(0, 100))
     frame.canvas.register_transformer(random_label)
+
+
+
+    def rainbow(element, style):
+        bbox = frame.canvas.bbox("all")
+        if bbox:
+            xlu, ylu, xdr, ydr = bbox
+            xc, yc = element.center()
+            # Color border from red to blue, depending on the relative
+            # horizontal position; left is red, right is blue
+            red = int(255 * (xc - xlu) / (xdr - xlu))
+            blue = int(255 * (xdr - xc) / (xdr - xlu))
+            style["shape_style"]["outline"] = "#%02x00%02x" % (red, blue)
+            style["shape_style"]["width"] = 2
+    frame.canvas.register_transformer(rainbow)
     # -------------------------------------------------------------------------
 
     root.mainloop()

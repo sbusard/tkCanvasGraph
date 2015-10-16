@@ -401,7 +401,7 @@ class InteractiveCanvasGraph(CanvasGraph):
         # Selected vertices transformer and observer
         def selected(element, style):
             if element in self.selected:
-                style["shape"]["fill"] = "yellow"
+                style["shape_style"]["fill"] = "yellow"
         self.register_transformer(selected)
 
         class SelectionObserver:
@@ -414,19 +414,6 @@ class InteractiveCanvasGraph(CanvasGraph):
 
         observer = SelectionObserver(self)
         self.selected.register(observer)
-
-        def rainbow(element, style):
-            bbox = self.bbox("all")
-            if bbox:
-                xlu, ylu, xdr, ydr = bbox
-                xc, yc = element.center()
-                # Color border from red to blue, depending on the relative
-                # horizontal position; left is red, right is blue
-                red = int(255 * (xc - xlu) / (xdr - xlu))
-                blue = int(255 * (xdr - xc) / (xdr - xlu))
-                style["shape"]["outline"] = "#%02x00%02x" % (red, blue)
-                style["shape"]["width"] = 2
-        self.register_transformer(rainbow)
 
         # Mouses for the canvas
         sm = SelectingMouse(selection=self.selected,
