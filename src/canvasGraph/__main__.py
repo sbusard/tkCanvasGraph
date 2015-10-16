@@ -1,9 +1,9 @@
 import tkinter as tk
 import random
-from .canvas import CanvasFrame
+from .canvas import CanvasFrame, Vertex, Edge
 from .mouse import Mouse, CreatingMouse
 from .layout import OneStepForceBasedLayout
-from .graph import Vertex, Edge, Rectangle, Oval
+from .shape import Rectangle, Oval
 
 if __name__ == "__main__":
     # Start a new window with canvas graph and creating mouse
