@@ -10,7 +10,7 @@ import random
 
 from .util import ObservableSet
 from .mouse import (SelectingMouse, SelectionModifyingMouse,
-                    MovingMouse)
+                    MovingMouse, MouseEvent)
 from .layout import ForceBasedLayout, OneStepForceBasedLayout, DotLayout
 
 
@@ -87,7 +87,7 @@ class CanvasGraph(tk.Canvas):
             self.layouting.set(True)
         self.after(self.layout_interval, iter_layout)
 
-    def current_element(self):
+    def _current_element(self):
         """
         Return the element under the mouse pointer, if any; None otherwise.
 
@@ -290,8 +290,14 @@ class CanvasGraph(tk.Canvas):
         :param event: the pressing event.
         """
         if (button, modifier) in self.mouses:
+            event = MouseEvent(self,
+                               self._current_element(),
+                               (self.canvasx(event.x), self.canvasy(event.y)),
+                               (event.x_root, event.y_root),
+                               event.num,
+                               event.type)
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.pressed(self, event):
+                if not mouse.pressed(event):
                     break
 
     def _moved(self, button, modifier, event):
@@ -303,8 +309,14 @@ class CanvasGraph(tk.Canvas):
         :param event: the moving event.
         """
         if (button, modifier) in self.mouses:
+            event = MouseEvent(self,
+                               self._current_element(),
+                               (self.canvasx(event.x), self.canvasy(event.y)),
+                               (event.x_root, event.y_root),
+                               event.num,
+                               event.type)
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.moved(self, event):
+                if not mouse.moved(event):
                     break
 
     def _released(self, button, modifier, event):
@@ -316,8 +328,14 @@ class CanvasGraph(tk.Canvas):
         :param event: the releasing event.
         """
         if (button, modifier) in self.mouses:
+            event = MouseEvent(self,
+                               self._current_element(),
+                               (self.canvasx(event.x), self.canvasy(event.y)),
+                               (event.x_root, event.y_root),
+                               event.num,
+                               event.type)
             for mouse in self.mouses[(button, modifier)]:
-                if not mouse.released(self, event):
+                if not mouse.released(event):
                     break
 
     def register_transformer(self, transformer):

@@ -11,7 +11,42 @@ to several pre-defined mouses.
 from .graph import Vertex, Edge
 
 __all__ = ["Mouse", "SelectingMouse", "SelectionModifyingMouse", "MovingMouse",
-           "CreatingMouse"]
+           "CreatingMouse", "MouseEvent"]
+
+
+class MouseEvent(object):
+    """
+    The event captured by a mouse.
+
+    Such an event has:
+    * the canvas the event occurred on;
+    * the current mouse pointer position on the canvas;
+    * the current mouse pointer position relative to the upper left corner of
+      the screen;
+    * the button number;
+    * the type of the event;
+    * the element of the graph the mouse pointer is on, if any (None otherwise)
+    """
+
+    def __init__(self, canvas, element, position, absolute, number, type_):
+        """
+        Create a new mouse event.
+
+        :param canvas: the canvas the event occurred on;
+        :param element: the element under the mouse pointer on canvas, if any;
+                        None otherwise;
+        :param position: the current (x, y) position of the mouse pointer;
+        :param absolute: the current (x, y) position of the mouse pointer,
+                         relative to the upper left corner of the screen;
+        :param number: the button number;
+        :param type_: the type of the event.
+        """
+        self.canvas = canvas
+        self.element = element
+        self.position = position
+        self.absolute = absolute
+        self.number = number
+        self.type_ = type_
 
 
 class Mouse(object):
@@ -26,34 +61,31 @@ class Mouse(object):
     mouses.
     """
 
-    def pressed(self, canvas, event):
+    def pressed(self, event):
         """
         React to mouse button pressed.
 
-        :param canvas: the canvas on which the event occurred;
-        :param event: the tkinter event of the pressed button.
+        :param event: the mouse event of the pressed button.
         :return: a True value if the event must be passed to the next mouse,
                  a False value otherwise.
         """
         return True  # Do nothing, pass the hand
 
-    def moved(self, canvas, event):
+    def moved(self, event):
         """
         React to mouse moved.
 
-        :param canvas: the canvas on which the event occurred;
-        :param event: the tkinter event of the moved mouse.
+        :param event: the mouse event of the moved mouse.
         :return: a True value if the event must be passed to the next mouse,
                  a False value otherwise.
         """
         return True  # Do nothing, pass the hand
 
-    def released(self, canvas, event):
+    def released(self, event):
         """
         React to mouse button released.
 
-        :param canvas: the canvas on which the event occurred;
-        :param event: the tkinter event of the released button.
+        :param event: the mouse event of the released button.
         :return: a True value if the event must be passed to the next mouse,
                  a False value otherwise.
         """
@@ -86,8 +118,9 @@ class SelectingMouse(Mouse):
 
         self.mouse_moved = False
 
-    def pressed(self, canvas, event):
-        element = canvas.current_element()
+    def pressed(self, event):
+        canvas = event.canvas
+        element = event.element
         self.mouse_moved = False
 
         # if element exists,
@@ -106,25 +139,24 @@ class SelectingMouse(Mouse):
             return True
         else:
             self.selected.clear()
-            self.selecting = (canvas.canvasx(event.x),
-                              canvas.canvasy(event.y))
+            self.selecting = event.position
             self.selection = canvas.create_rectangle(self.selecting +
                                                      self.selecting,
                                                      outline="gray")
             return False
 
-    def moved(self, canvas, event):
+    def moved(self, event):
+        canvas = event.canvas
         self.mouse_moved = True
         if self.selecting is None:
             return True
         else:
-            canvas.coords(self.selection,
-                          canvas.canvasx(event.x),
-                          canvas.canvasy(event.y),
-                          *self.selecting)
+            coords = event.position + self.selecting
+            canvas.coords(self.selection, *coords)
             return False
 
-    def released(self, canvas, event):
+    def released(self, event):
+        canvas = event.canvas
         if self.mouse_moved:
             self.mouse_moved = False
             if self.selecting is None:
@@ -140,7 +172,7 @@ class SelectingMouse(Mouse):
                 self.selection = None
                 return False
         else:
-            element = canvas.current_element()
+            element = event.element
             if self.elements is None or element in self.elements:
                 self.selected.clear()
                 self.selected.add(element)
@@ -172,8 +204,8 @@ class SelectionModifyingMouse(Mouse):
         self.selected = set() if selection is None else selection
         self.elements = elements
 
-    def pressed(self, canvas, event):
-        element = canvas.current_element()
+    def pressed(self, event):
+        element = event.element
 
         if element in self.selected:
             self.selected.remove(element)
@@ -204,22 +236,22 @@ class MovingMouse(Mouse):
         self.moving = False
         self.position = None
 
-    def pressed(self, canvas, event):
-        element = canvas.current_element()
+    def pressed(self, event):
+        canvas = event.canvas
+        element = event.element
 
         # if element is in selection, start moving
         if element is not None and element in self.selected:
             self.moving = True
-            self.position = (canvas.canvasx(event.x),
-                             canvas.canvasy(event.y))
+            self.position = event.position
             return False
         else:
             return True
 
-    def moved(self, canvas, event):
+    def moved(self, event):
+        canvas = event.canvas
         if self.moving:
-            x = canvas.canvasx(event.x)
-            y = canvas.canvasy(event.y)
+            x, y = event.position
             dx, dy = x - self.position[0], y - self.position[1]
             canvas.move_elements(self.selected, dx, dy)
             self.position = x, y
@@ -227,7 +259,7 @@ class MovingMouse(Mouse):
         else:
             return True
 
-    def released(self, canvas, event):
+    def released(self, event):
         if self.moving:
             self.moving = False
             self.position = None
@@ -255,8 +287,9 @@ class CreatingMouse(Mouse):
         self.vertices = vertices
         self.starting = None
 
-    def pressed(self, canvas, event):
-        element = canvas.current_element()
+    def pressed(self,  event):
+        canvas = event.canvas
+        element = event.element
 
         # if element exists and is a vertex,
         #   start to build an edge
@@ -267,21 +300,20 @@ class CreatingMouse(Mouse):
             self.starting = element
             return False
         else:
-            x = canvas.canvasx(event.x)
-            y = canvas.canvasy(event.y)
             v = Vertex(canvas)
-            canvas.add_vertex(v, position=(x, y))
+            canvas.add_vertex(v, position=event.position)
             return False
 
-    def moved(self, canvas, event):
+    def moved(self, event):
         if self.starting is not None:
             return False
         else:
             return True
 
-    def released(self, canvas, event):
+    def released(self, event):
         if self.starting is not None:
-            element = canvas.current_element()
+            canvas = event.canvas
+            element = event.element
 
             # if element exists, is a vertex and is not starting,
             #   add an edge 

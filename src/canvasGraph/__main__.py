@@ -108,8 +108,9 @@ if __name__ == "__main__":
 
 
     class LabelEditingMouse(Mouse):
-        def released(self, canvas, event):
-            element = canvas.current_element()
+        def released(self, event):
+            canvas = event.canvas
+            element = event.element
             if element is not None:
                 ChangeLabelDialog(element, canvas)
             return False
