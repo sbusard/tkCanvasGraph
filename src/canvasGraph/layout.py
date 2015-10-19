@@ -73,8 +73,8 @@ class OneStepForceBasedLayout(Layout):
         xo0, yo0, xo1, yo1 = (
             xoc - ow / 2, yoc - oh / 2, xoc + ow / 2, yoc + oh / 2)
 
-        xvi, yvi = vertex.shape.intersection((xv0, yv0, xv1, yv1), (xoc, yoc))
-        xoi, yoi = other.shape.intersection((xo0, yo0, xo1, yo1), (xvc, yvc))
+        xvi, yvi = vertex.intersection((xoc, yoc), bbox=(xv0, yv0, xv1, yv1))
+        xoi, yoi = other.intersection((xvc, yvc), bbox=(xo0, yo0, xo1, yo1))
 
         return xvi, yvi, xoi, yoi
 

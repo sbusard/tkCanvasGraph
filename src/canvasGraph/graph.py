@@ -109,6 +109,25 @@ class GraphElement:
         """
         return self.style["shape"]
 
+    def intersection(self, end, bbox=None):
+        """
+        Return the point of intersection between this element if it had the
+        given bounding box, and the line segment defined by the center of this
+        bounding box and end.
+        Return None is such an intersection does not exist.
+
+        :param end: the (x, y) coordinates of the ending point;
+        :param bbox: if not None, the tkinter-style bounding box to consider.
+        :return: the (x, y) coordinates of the intersection point of this
+                 element and the line between its center and end, if any,
+                 None otherwise.
+
+        If bbox is None, use the actual element bounding box.
+        """
+        if bbox is None:
+            bbox = self.bbox
+        return self.shape.intersection(bbox, end)
+
     def draw(self, x, y):
         """
         Draw this element on its canvas, centered at position x, y.
