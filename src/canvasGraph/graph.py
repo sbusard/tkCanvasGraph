@@ -135,7 +135,6 @@ class GraphElement:
         :param x: the horizontal position;
         :param y: the vertical position.
         """
-        self.delete()
         canvas = self._canvas
 
         # Add label on canvas and store handle
@@ -260,11 +259,10 @@ class GraphElement:
         self.move(dx, dy)
         return dx, dy
 
-    def delete(self):
+    def delete_handles(self):
         """
-        Remove this element from canvas, if it is already drawn.
+        Set the handles of this element to None.
         """
-        self._canvas.delete_element(self)
         self._handle = None
         self._labelhandle = None
 
@@ -366,13 +364,11 @@ class Edge(GraphElement):
         else:
             return super(Edge, self).handles
 
-    def delete(self):
+    def delete_handles(self):
         """
-        Remove this edge from canvas.
-
-        This element must be already drawn on its canvas.
+        Set the handles of this edge to None.
         """
-        super(Edge, self).delete()
+        super(Edge, self).delete_handles()
         self._arrowhandle = None
 
     def _refresh_arrows(self):

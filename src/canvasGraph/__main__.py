@@ -68,6 +68,17 @@ if __name__ == "__main__":
     frame.canvas.bind("k", add_edge)
 
 
+    class DeletingMouse(Mouse):
+        def released(self, event):
+            canvas = event.canvas
+            element = event.element
+            if element is not None:
+                canvas.delete_element(element)
+            return False
+
+    frame.canvas.register_mouse(DeletingMouse(), "2", "Control")
+
+
     class ChangeLabelDialog(tk.Toplevel):
         def __init__(self, element, parent, **config):
             super().__init__(parent, **config)

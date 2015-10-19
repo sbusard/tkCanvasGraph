@@ -12,6 +12,7 @@ from .util import ObservableSet
 from .mouse import (SelectingMouse, SelectionModifyingMouse,
                     MovingMouse, MouseEvent)
 from .layout import ForceBasedLayout, OneStepForceBasedLayout, DotLayout
+from .graph import Vertex, Edge
 
 
 __all__ = ["CanvasGraph", "InteractiveCanvasGraph", "CanvasFrame"]
@@ -178,8 +179,17 @@ class CanvasGraph(tk.Canvas):
 
         :param element: the element to delete.
         """
+
+        # Remove edges if element is vertex
+        if isinstance(element, Vertex):
+            to_delete = {edge for edge in self.edges
+                         if edge.origin == element or edge.end == element}
+            for edge in to_delete:
+                self.delete_element(edge)
+
         for handle in element.handles:
             self._delete_handle(handle)
+        element.delete_handles()
 
         # Discard from other sets
         self.vertices.discard(element)
