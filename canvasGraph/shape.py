@@ -7,6 +7,9 @@ This module defines shapes for graph elements.
 import math
 
 
+__all__ = ["Shape", "Oval", "Rectangle"]
+
+
 class Shape:
     """
     The shape of a graph element.
