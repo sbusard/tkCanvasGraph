@@ -221,9 +221,9 @@ class GraphElement:
                 canvas.tag_raise(self._labelhandle)
 
         # Update style
-        canvas.itemconfig(self._handle, style["shape_style"])
+        canvas.itemconfig(self._handle, **style["shape_style"])
         if self._labelhandle is not None:
-            canvas.itemconfig(self._labelhandle, style["label_style"])
+            canvas.itemconfig(self._labelhandle, **style["label_style"])
 
     def move(self, dx, dy):
         """
@@ -394,7 +394,7 @@ class Edge(GraphElement):
         if self._arrowhandle is not None:
             canvas.coords(self._arrowhandle, *(xo, yo, xol, yol,
                                                xel, yel, xe, ye))
-            canvas.itemconfig(self._arrowhandle, self.style.arrow_style)
+            canvas.itemconfig(self._arrowhandle, **self.style.arrow_style)
         else:
             self._arrowhandle = canvas.create_line((xo, yo, xol, yol,
                                                     xel, yel, xe, ye),
