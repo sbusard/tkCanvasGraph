@@ -19,6 +19,7 @@ class MouseEvent(object):
     The event captured by a mouse.
 
     Such an event has:
+
     * the canvas the event occurred on;
     * the current mouse pointer position on the canvas;
     * the current mouse pointer position relative to the upper left corner of
@@ -26,6 +27,7 @@ class MouseEvent(object):
     * the button number;
     * the type of the event;
     * the element of the graph the mouse pointer is on, if any (None otherwise)
+
     """
 
     def __init__(self, canvas, element, position, absolute, number, type_):
@@ -54,9 +56,11 @@ class Mouse(object):
     A generic mouse doing nothing.
 
     Mouses can be registered to canvas. Three events are handled by mouses:
-        * pressed button
-        * moved pointer
-        * released button
+
+    * pressed button
+    * moved pointer
+    * released button
+
     Whenever such an event occurs, the canvas delegates it to the registered
     mouses.
     """

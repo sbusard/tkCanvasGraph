@@ -301,10 +301,11 @@ class Vertex(GraphElement):
 
     In addition to the common style of graph elements, vertices define a style
     for their selected states. The style.selected dictionary contains:
-        * shape, defining the appearance of the shape of the vertex when
-          selected;
-        * text, defining the appearance of the label of the vertex when
-          selected.
+
+    * shape, defining the appearance of the shape of the vertex when
+      selected;
+    * text, defining the appearance of the label of the vertex when
+      selected.
 
     Note that any style that is not overriden is kept as-is. For example, if
     style.selected changes the width of the border of the vertex, and

@@ -357,6 +357,7 @@ class CanvasGraph(tk.Canvas):
         :param transformer: the transformer to register.
 
         The transformer has access to and can change:
+
         * the label of the element: style["label"].
           The transformer should not delete the "label" key and its value
           should be a string.
