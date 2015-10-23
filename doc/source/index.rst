@@ -6,10 +6,12 @@
 Welcome to canvasGraph's documentation!
 =======================================
 
-Contents:
+CanvasGraph is a TK-based GUI to display and manipulate graphs.
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 1
+    
+    canvasGraph
 
 
 
