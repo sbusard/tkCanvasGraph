@@ -247,104 +247,155 @@ class CanvasGraph(tk.Canvas):
             edge.refresh()
         self._update_scrollregion()
 
-    def register_mouse(self, mouse, button, modifier):
+    def _modifiers_from_string(self, modifiers):
         """
-        Register a new mouse for button pressed with modifier.
+        Return the frozenset of modifiers defined by `modifiers`.
+
+        :param modifiers: a string containing dash-separated modifiers.
+        :return: a frozenset of the isolated modifiers.
+        """
+        if not modifiers:
+            return frozenset()
+        return frozenset(modifiers.split("-"))
+
+    def _modifiers_from_state(self, state):
+        """
+        Return the frozenset of modifiers defined by `state`.
+
+        :param state: the hexadecimal encoding of a set of modifiers.
+        :return: a frozenset of the isolated modifiers.
+        """
+        masks = {0x0001: "Shift",
+                 0x0002: "Lock",
+                 0x0004: "Control",
+                 0x0008: "Command",
+                 0x0010: "Alt",
+                 0x0080: "Alt"}
+        return frozenset(masks[mask] for mask in masks if state & mask)
+
+    def _mouse_button_from_state(self, state):
+        """
+        Return the mouse button defined by `state`.
+
+        :param state: the hexadecimal encoding.
+        :return: the (str) button.
+        """
+        masks = {0x0100: "1",
+                 0x0200: "2",
+                 0x0400: "3"}
+        for mask in masks:
+            if state & mask:
+                return masks[mask]
+
+    def register_mouse(self, mouse, button, modifiers):
+        """
+        Register a new mouse for button pressed with modifiers.
 
         :param mouse: the mouse to register. Must comply with the mouse.Mouse
                       methods.
         :param button: the button to react to.
-        :param modifier: the modifier to activate the mouse for.
+        :param modifiers: the modifiers to activate the mouse for.
         """
 
-        modifier = modifier + "-" if modifier != "" else modifier
+        button = str(button)
+        modifiers = self._modifiers_from_string(modifiers)
+        str_modifiers = ("" if not modifiers
+                         else ("-".join(sorted(modifiers)) + "-"))
 
-        if (button, modifier) not in self.mouses:
-            self.mouses[(button, modifier)] = []
-            self.bind("<" + modifier + "ButtonPress-" + button + ">",
-                      lambda e: self._pressed(button, modifier, e))
-            self.bind("<" + modifier + "B" + button + "-Motion>",
-                      lambda e: self._moved(button, modifier, e))
-            self.bind("<" + modifier + "ButtonRelease-" + button + ">",
-                      lambda e: self._released(button, modifier, e))
+        if (button, modifiers) not in self.mouses:
+            self.mouses[(button, modifiers)] = []
+            self.bind("<" + str_modifiers + "ButtonPress-" + button + ">",
+                      lambda e: self._pressed(e))
+            self.bind("<" + str_modifiers + "B" + button + "-Motion>",
+                      lambda e: self._moved(e))
+            self.bind("<" + str_modifiers + "ButtonRelease-" + button + ">",
+                      lambda e: self._released(e))
 
-        self.mouses[(button, modifier)].append(mouse)
+        self.mouses[(button, modifiers)].append(mouse)
 
-    def unregister_mouse(self, mouse, button, modifier):
+    def unregister_mouse(self, mouse, button, modifiers):
         """
-        Unregister a registered mouse for button pressed with modifier.
+        Unregister a registered mouse for button pressed with modifiers.
 
         :param mouse: the mouse to unregister.
         :param button: the button for which the mouse was registered.
-        :param modifier: the modifier for which the mouse was registered.
+        :param modifiers: the modifiers for which the mouse was registered.
         """
 
-        modifier = modifier + "-" if modifier != "" else modifier
+        button = str(button)
+        modifiers = self._modifiers_from_string(modifiers)
+        str_modifiers = ("" if not modifiers
+                         else ("-".join(sorted(modifiers)) + "-"))
 
-        if (button, modifier) in self.mouses:
-            if mouse in self.mouses[(button, modifier)]:
-                self.mouses[(button, modifier)].remove(mouse)
+        if (button, modifiers) in self.mouses:
+            if mouse in self.mouses[(button, modifiers)]:
+                self.mouses[(button, modifiers)].remove(mouse)
 
-            if len(self.mouses[(button, modifier)]) <= 0:
-                del self.mouses[(button, modifier)]
-                self.unbind("<" + modifier + "ButtonPress-" + button + ">")
-                self.unbind("<" + modifier + "B" + button + "-Motion>")
-                self.unbind("<" + modifier + "ButtonRelease-" + button + ">")
+            if len(self.mouses[(button, modifiers)]) <= 0:
+                del self.mouses[(button, modifiers)]
+                self.unbind("<" + str_modifiers +
+                            "ButtonPress-" + button + ">")
+                self.unbind("<" + str_modifiers + "B" + button + "-Motion>")
+                self.unbind("<" + str_modifiers +
+                            "ButtonRelease-" + button + ">")
 
-    def _pressed(self, button, modifier, event):
+    def _pressed(self, event):
         """
         React to a mouse button pressed.
 
-        :param button: the pressed button.
-        :param modifier: the used modifier.
         :param event: the pressing event.
         """
-        if (button, modifier) in self.mouses:
+        button = event.num
+        button = str(button)
+        modifiers = self._modifiers_from_state(event.state)
+        if (button, modifiers) in self.mouses:
             event = MouseEvent(self,
                                self._current_element(),
                                (self.canvasx(event.x), self.canvasy(event.y)),
                                (event.x_root, event.y_root),
                                event.num,
                                event.type)
-            for mouse in self.mouses[(button, modifier)]:
+            for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.pressed(event):
                     break
 
-    def _moved(self, button, modifier, event):
+    def _moved(self, event):
         """
         React to a moved mouse.
 
-        :param button: the button pressed when moving.
-        :param modifier: the modifier used when moving.
         :param event: the moving event.
         """
-        if (button, modifier) in self.mouses:
+        button = self._mouse_button_from_state(event.state)
+        button = str(button)
+        modifiers = self._modifiers_from_state(event.state)
+        if (button, modifiers) in self.mouses:
             event = MouseEvent(self,
                                self._current_element(),
                                (self.canvasx(event.x), self.canvasy(event.y)),
                                (event.x_root, event.y_root),
                                event.num,
                                event.type)
-            for mouse in self.mouses[(button, modifier)]:
+            for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.moved(event):
                     break
 
-    def _released(self, button, modifier, event):
+    def _released(self, event):
         """
         React the a mouse button released.
 
-        :param button: the released button.
-        :param modifier: the used modifier.
         :param event: the releasing event.
         """
-        if (button, modifier) in self.mouses:
+        button = event.num
+        button = str(button)
+        modifiers = self._modifiers_from_state(event.state)
+        if (button, modifiers) in self.mouses:
             event = MouseEvent(self,
                                self._current_element(),
                                (self.canvasx(event.x), self.canvasy(event.y)),
                                (event.x_root, event.y_root),
                                event.num,
                                event.type)
-            for mouse in self.mouses[(button, modifier)]:
+            for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.released(event):
                     break
 
