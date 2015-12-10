@@ -44,7 +44,6 @@ class CanvasGraph(tk.Canvas):
         self.mouses = {}
 
         self.config(scrollregion=self.bbox("all"))
-        self.focus_set()
 
         # Layout variable to stop and start interactive layouts
         self.layouting = tk.BooleanVar()
