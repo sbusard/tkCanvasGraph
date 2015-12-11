@@ -286,7 +286,7 @@ class CanvasGraph(tk.Canvas):
             if state & mask:
                 return masks[mask]
 
-    def register_mouse(self, mouse, button, modifiers):
+    def register_mouse(self, mouse, button, modifiers=""):
         """
         Register a new mouse for button pressed with modifiers.
 
@@ -312,7 +312,7 @@ class CanvasGraph(tk.Canvas):
 
         self.mouses[(button, modifiers)].append(mouse)
 
-    def unregister_mouse(self, mouse, button, modifiers):
+    def unregister_mouse(self, mouse, button, modifiers=""):
         """
         Unregister a registered mouse for button pressed with modifiers.
 
