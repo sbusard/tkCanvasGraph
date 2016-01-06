@@ -420,17 +420,23 @@ class CanvasGraph(tk.Canvas):
         * the style of the shape: style["shape_style"].
           The style of the shape should be a dictionary of valid tkinter canvas
           shape configurations.
+
+        The canvas is refreshed.
         """
         self.transformers.append(transformer)
+        self.refresh()
 
     def unregister_transformer(self, transformer):
         """
         Unregister the given transformer.
 
         :param transformer: the transformer to unregister.
+
+        The canvas is refreshed.
         """
         while transformer in self.transformers:
             self.transformers.remove(transformer)
+        self.refresh()
 
 
 class InteractiveCanvasGraph(CanvasGraph):
