@@ -191,6 +191,7 @@ class GraphElement:
                 # Remove labelhandle if needed
                 if self._labelhandle is not None:
                     canvas._delete_handle(self._labelhandle)
+                    self._labelhandle = None
                 # Set bbox as xc, yc, xc, yc
                 label_bbox = (xc, yc, xc, yc)
             else:
