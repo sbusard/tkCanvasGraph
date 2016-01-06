@@ -225,6 +225,11 @@ class GraphElement:
         canvas.itemconfig(self._handle, **style["shape_style"])
         if self._labelhandle is not None:
             canvas.itemconfig(self._labelhandle, **style["label_style"])
+        
+        # Raise
+        canvas.tag_raise(self._handle)
+        if style["label"]:
+            canvas.tag_raise(self._labelhandle)
 
     def move(self, dx, dy):
         """
