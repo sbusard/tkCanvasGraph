@@ -4,6 +4,7 @@ Graph elements.
 This module defines the elements drawn on canvas graph: vertices and edges.
 """
 
+from copy import deepcopy
 import tkinter as tk
 from .shape import Rectangle, Oval
 from .util import ObservableSet, AttrDict, CanvasToolTip
@@ -23,6 +24,7 @@ class GraphElement:
         :param canvas: the canvas on which drawing on;
         :param shape: the shape of the graph element;
         :param label: the label inside the shape of the element;
+                      should be not None;
         :param tooltip: if not None, a string that will be used as a tooltip.
         """
         self._canvas = canvas
@@ -170,58 +172,55 @@ class GraphElement:
         assert self._handle is not None, "The element is not drawn yet"
         canvas = self._canvas
 
-        old_label = self.style["label"]
-        old_shape = self.style["shape"]
-
+        # Pass the style through the transformers
         style = self.style
         for transformer in canvas.transformers:
             transformer(self, style)
 
         xc, yc = self.center
 
-        if old_label:
+        # Get the label bounding box
+        if self._labelhandle:
             label_bbox = canvas.bbox(self._labelhandle)
         else:
             label_bbox = (xc, yc, xc, yc)
 
         # Update label
-        if style["label"] != old_label:
-            new_label = style["label"]
-            if new_label == "":
-                # Remove labelhandle if needed
-                if self._labelhandle is not None:
-                    canvas._delete_handle(self._labelhandle)
-                    self._labelhandle = None
-                # Set bbox as xc, yc, xc, yc
-                label_bbox = (xc, yc, xc, yc)
+        new_label = style["label"]
+        if new_label == "":
+            # Remove labelhandle if needed
+            if self._labelhandle is not None:
+                canvas._delete_handle(self._labelhandle)
+                self._labelhandle = None
+            # Set bbox as xc, yc, xc, yc
+            label_bbox = (xc, yc, xc, yc)
+        else:
+            # draw labelhandle if needed
+            if self._labelhandle is None:
+                self._labelhandle = canvas.create_text(xc,
+                                                       yc,
+                                                       text=new_label)
+                canvas.handles[self._labelhandle] = self
+            # or change text
             else:
-                # draw labelhandle if needed
-                if self._labelhandle is None:
-                    self._labelhandle = canvas.create_text(xc,
-                                                           yc,
-                                                           text=new_label)
-                    canvas.handles[self._labelhandle] = self
-                # or change text
-                else:
-                    canvas.itemconfig(self._labelhandle, text=new_label)
-                # Set bbox as text bbox
-                label_bbox = canvas.bbox(self._labelhandle)
-            # Update shape for new bbox
-            canvas.coords(self._handle,
-                          self.style["shape"].dimension(label_bbox))
+                canvas.itemconfig(self._labelhandle, text=new_label)
+            # Set bbox as text bbox
+            label_bbox = canvas.bbox(self._labelhandle)
+        # Update shape for new bbox
+        canvas.coords(self._handle,
+                      self.style["shape"].dimension(label_bbox))
 
         # Update shape
-        if style["shape"] != old_shape:
-            new_shape = style["shape"]
-            canvas._delete_handle(self._handle)
-            self._handle = self.style["shape"].draw(canvas,
-                                                    label_bbox,
-                                                    style["shape_style"])
-            canvas.handles[self._handle] = self
-            if style["label"]:
-                canvas.tag_raise(self._labelhandle)
+        new_shape = style["shape"]
+        canvas._delete_handle(self._handle)
+        self._handle = self.style["shape"].draw(canvas,
+                                                label_bbox,
+                                                style["shape_style"])
+        canvas.handles[self._handle] = self
+        if style["label"]:
+            canvas.tag_raise(self._labelhandle)
 
-        # Update style
+        # Update styles
         canvas.itemconfig(self._handle, **style["shape_style"])
         if self._labelhandle is not None:
             canvas.itemconfig(self._labelhandle, **style["label_style"])

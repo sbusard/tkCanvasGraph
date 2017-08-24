@@ -167,10 +167,13 @@ class SelectingMouse(Mouse):
                 return True
             else:
                 self.selected.clear()
-                for e in canvas.find_enclosed(*canvas.coords(self.selection)):
-                    e = canvas.element_by_handle(e)
-                    if self.elements is None or e in self.elements:
-                        self.selected.add(e)
+                to_add = set()
+                for handle in canvas.find_enclosed(
+                                *canvas.coords(self.selection)):
+                    element = canvas.element_by_handle(handle)
+                    if self.elements is None or element in self.elements:
+                        to_add.add(element)
+                self.selected.update(to_add)
                 self.selecting = None
                 canvas.delete(self.selection)
                 self.selection = None

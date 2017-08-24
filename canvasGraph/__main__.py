@@ -14,60 +14,13 @@ if __name__ == "__main__":
 
     frame.pack(fill="both", expand=True)
 
-    # Add creating mouse to the canvas
+
+    # Add predefined creating mouse to the canvas
     cm = CreatingMouse(frame.canvas.vertices)
     frame.canvas.register_mouse(cm, "1", "Control")
 
-    # TODO Remove this (tests) -----------------------------------------------
-    # One step of force-based layout
-    frame.canvas.bind("o",
-                      lambda e:
-                      frame.canvas.apply_layout(OneStepForceBasedLayout()))
 
-    # Random adding
-    added = set()
-
-    def add_vertex(_):
-        v = Vertex(frame.canvas,
-                   str(random.randint(0, 100)) + "\n" +
-                   "\n".join("TEST" +
-                             str(random.randint(0, 100)) +
-                             "=" +
-                             "TEST" +
-                             str(random.randint(0, 100))
-                             for _ in range(3)))
-        frame.canvas.add_vertex(v)
-        added.add(v)
-
-    def added_vertex(element, style):
-        if element.label and isinstance(element, Vertex):
-            style["shape_style"]["width"] = 4
-    frame.canvas.register_transformer(added_vertex)
-
-    def selected_vertex(element, style):
-        if element.label and element in frame.canvas.selected:
-            style["shape_style"]["outline"] = "red"
-    frame.canvas.register_transformer(selected_vertex)
-
-    frame.canvas.bind("j", add_vertex)
-
-
-    def add_edge(_):
-        pairs = [(o, e)
-                 for o in frame.canvas.vertices
-                 for e in frame.canvas.vertices
-                 if o != e
-                 if len([edge for edge in frame.canvas.edges
-                         if edge.origin == o and edge.end == e]) <= 0]
-        if len(pairs) > 0:
-            o, e = random.choice(pairs)
-            edge = Edge(frame.canvas, o, e, label=str(random.randint(0, 100)))
-            frame.canvas.add_edge(edge)
-
-
-    frame.canvas.bind("k", add_edge)
-
-
+    # Define and add deleting mouse to the canvas
     class DeletingMouse(Mouse):
         def released(self, event):
             canvas = event.canvas
@@ -79,6 +32,7 @@ if __name__ == "__main__":
     frame.canvas.register_mouse(DeletingMouse(), "2", "Control")
 
 
+    # Define and add new mouse to change labels
     class ChangeLabelDialog(tk.Toplevel):
         def __init__(self, element, parent, **config):
             super().__init__(parent, **config)
@@ -117,7 +71,6 @@ if __name__ == "__main__":
 
             label_entry.focus()
 
-
     class LabelEditingMouse(Mouse):
         def released(self, event):
             canvas = event.canvas
@@ -129,16 +82,8 @@ if __name__ == "__main__":
     frame.canvas.register_mouse(LabelEditingMouse(), "2", "")
 
 
-    def random_label(_, style):
-        style["label"] = str(random.randint(0, 100))
-    frame.canvas.register_transformer(random_label)
-
-
-    def random_shape(_, style):
-        style["shape"] = random.choice([Rectangle(), Oval()])
-    frame.canvas.register_transformer(random_shape)
-
-
+    # Add a transformer to give colors to element edges depending on their
+    # relative position
     def rainbow(element, style):
         bbox = frame.canvas.bbox("all")
         if bbox:
@@ -151,6 +96,41 @@ if __name__ == "__main__":
             style["shape_style"]["outline"] = "#%02x00%02x" % (red, blue)
             style["shape_style"]["width"] = 2
     frame.canvas.register_transformer(rainbow)
-    # -------------------------------------------------------------------------
+
+
+    # Add transformer that change the color outline of selected vertices and
+    # edges
+    def selected_vertex(element, style):
+        if element in frame.canvas.selected:
+            style["shape_style"]["outline"] = "green"
+    frame.canvas.register_transformer(selected_vertex)
+
+
+    # Add keyboard bindings to apply one step of the force based layout,
+    # and to add random vertices and edges
+    frame.canvas.bind("o",
+                      lambda e:
+                      frame.canvas.apply_layout(OneStepForceBasedLayout()))
+
+    def add_vertex(_):
+        v = Vertex(frame.canvas)
+        frame.canvas.add_vertex(v)
+
+    frame.canvas.bind("j", add_vertex)
+
+    def add_edge(_):
+        pairs = [(o, e)
+                 for o in frame.canvas.vertices
+                 for e in frame.canvas.vertices
+                 if o != e
+                 if len([edge for edge in frame.canvas.edges
+                         if edge.origin == o and edge.end == e]) <= 0]
+        if len(pairs) > 0:
+            o, e = random.choice(pairs)
+            edge = Edge(frame.canvas, o, e)
+            frame.canvas.add_edge(edge)
+
+    frame.canvas.bind("k", add_edge)
+
 
     root.mainloop()

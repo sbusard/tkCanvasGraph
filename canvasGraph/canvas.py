@@ -357,6 +357,7 @@ class CanvasGraph(tk.Canvas):
             for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.pressed(event):
                     break
+        self.refresh()
 
     def _moved(self, event):
         """
@@ -377,6 +378,7 @@ class CanvasGraph(tk.Canvas):
             for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.moved(event):
                     break
+        self.refresh()
 
     def _released(self, event):
         """
@@ -397,6 +399,7 @@ class CanvasGraph(tk.Canvas):
             for mouse in self.mouses[(button, modifiers)]:
                 if not mouse.released(event):
                     break
+        self.refresh()
 
     def register_transformer(self, transformer):
         """
