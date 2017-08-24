@@ -1,6 +1,8 @@
 canvasGraph is a Python library that implements a tkinter canvas on which users
 can display and manipulate graphs.
 
+The documentation is available on http://canvasgraph.readthedocs.io/.
+
 A small example of its usage:
 
 .. code:: python
