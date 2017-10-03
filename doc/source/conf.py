@@ -99,6 +99,9 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+# Mock tkinter import
+autodoc_mock_imports = ['_tkinter']
+
 
 # -- Options for HTML output ----------------------------------------------
 
