@@ -100,7 +100,7 @@ pygments_style = 'sphinx'
 #keep_warnings = False
 
 # Mock tkinter import
-autodoc_mock_imports = ['_tkinter']
+autodoc_mock_imports = ['tkinter']
 
 
 # -- Options for HTML output ----------------------------------------------
