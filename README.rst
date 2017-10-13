@@ -1,14 +1,14 @@
-canvasGraph is a Python library that implements a tkinter canvas on which users
-can display and manipulate graphs.
+tkCanvasGraph is a Python library that implements a tkinter canvas on which
+users can display and manipulate graphs.
 
-The documentation is available on http://canvasgraph.readthedocs.io/.
+The documentation is available on http://tkCanvasgraph.readthedocs.io/.
 
 A small example of its usage:
 
 .. code:: python
 
     import tkinter
-    from canvasGraph import CanvasFrame, Vertex, Edge
+    from tkCanvasGraph import CanvasFrame, Vertex, Edge
     root = tkinter.Tk()
     frame = CanvasFrame(root)
     frame.pack(fill="both", expand=True)
@@ -21,15 +21,15 @@ A small example of its usage:
     root.mainloop()
 
 It creates a new tkinter window, fills it with a `CanvasFrame` (a tkinter
-frame containing a canvasGraph `frame.canvas`, but also buttons to apply
+frame containing a tkCanvasGraph `frame.canvas`, but also buttons to apply
 layouts, and scrollbars), then add two vertices and one edge.
 
 
-Another example is the `canvasGraph/__main__.py` file:
+Another example is the `tkCanvasGraph/__main__.py` file:
 
 .. code::
 
-    python -m canvasGraph
+    python -m tkCanvasGraph
 
 It opens a similar window with additional functionalities:
 
