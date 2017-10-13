@@ -6,12 +6,12 @@ from setuptools import setup, find_packages
 
 with open("README.rst", "r") as readme:
     setup(
-        name="canvasGraph",
+        name="tkCanvasGraph",
         version="1.0",
         description=
         "A library to display and manipulate graphs on a tkinter canvas.",
         long_description=readme.read(),
-        url="https://github.com/sbusard/canvasGraph",
+        url="https://github.com/sbusard/tkCanvasGraph",
         author="Simon Busard",
         author_email="simon.busard@gmail.com",
         license="MIT",

@@ -1,7 +1,7 @@
-canvasGraph
-===========
+tkCanvasGraph
+=============
 
 .. toctree::
    :maxdepth: 4
 
-   canvasGraph
+   tkCanvasGraph
